@@ -1,0 +1,26 @@
+<Project>
+
+  <PropertyGroup>
+    <Version>1.0.0-dev</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>ConfuserNext</Product>
+    <Company>ConfuserNext Contributors</Company>
+    <Copyright>Copyright (C) Ki 2014, ConfuserNext Contributors 2026</Copyright>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ConfuserNext.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+</Project>

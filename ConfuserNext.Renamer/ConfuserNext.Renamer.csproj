@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>ConfuserNext.Renamer</RootNamespace>
+    <AssemblyName>ConfuserNext.Renamer</AssemblyName>
+    <Description>Renaming analysis of ConfuserNext</Description>
+    <AssemblyTitle>ConfuserNext Renamer</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dnlib" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
+    <PackageReference Include="System.IO.Packaging" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfuserNext.Core\ConfuserNext.Core.csproj" />
+  </ItemGroup>
+
+</Project>

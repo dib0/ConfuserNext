@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>ConfuserNext.Protections</RootNamespace>
+    <AssemblyName>ConfuserNext.Protections</AssemblyName>
+    <Description>Protections and packers of ConfuserNext</Description>
+    <AssemblyTitle>ConfuserNext Protections</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dnlib" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfuserNext.Core\ConfuserNext.Core.csproj" />
+    <ProjectReference Include="..\ConfuserNext.DynCipher\ConfuserNext.DynCipher.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Renamer\ConfuserNext.Renamer.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Runtime\ConfuserNext.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

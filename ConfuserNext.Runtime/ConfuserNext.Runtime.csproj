@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net40</TargetFramework>
+    <RootNamespace>ConfuserNext.Runtime</RootNamespace>
+    <AssemblyName>ConfuserNext.Runtime</AssemblyName>
+    <Description>Runtime library of ConfuserNext</Description>
+    <AssemblyTitle>ConfuserNext Runtime</AssemblyTitle>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      This assembly is never executed directly: its IL method bodies are read with dnlib and
+      copied into the protected target assembly by ConfuserNext.Core's InjectHelper. A single
+      net40 build is the broadest-compatible IL source for injection into .NET Framework targets;
+      injecting into modern .NET targets is tracked as follow-up work.
+    -->
+  </PropertyGroup>
+
+</Project>

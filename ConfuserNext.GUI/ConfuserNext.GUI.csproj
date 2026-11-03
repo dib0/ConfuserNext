@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFrameworks>net48;net8.0-windows;net10.0-windows</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>ConfuserNext</RootNamespace>
+    <AssemblyName>ConfuserNext.GUI</AssemblyName>
+    <Description>ConfuserNext GUI</Description>
+    <AssemblyTitle>ConfuserNext</AssemblyTitle>
+    <ApplicationIcon>ConfuserNext.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfuserNext.Core\ConfuserNext.Core.csproj" />
+    <ProjectReference Include="..\ConfuserNext.DynCipher\ConfuserNext.DynCipher.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Protections\ConfuserNext.Protections.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Renamer\ConfuserNext.Renamer.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Runtime\ConfuserNext.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="ConfuserNext.ico" />
+    <Resource Include="Resources\FontAwesome.otf" />
+    <Resource Include="Resources\Decode.png" />
+    <Resource Include="Resources\New.png" />
+    <Resource Include="Resources\Open.png" />
+    <Resource Include="Resources\Save.png" />
+    <Resource Include="Resources\Tools.png" />
+    <Resource Include="Resources\Error.png" />
+    <Resource Include="Resources\TeamLogo.png" />
+  </ItemGroup>
+
+</Project>
