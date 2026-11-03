@@ -24,10 +24,9 @@ namespace ConfuserNext.Core {
 			this Dictionary<TKey, TValue> dictionary,
 			TKey key,
 			TValue defValue = default(TValue)) {
-			TValue ret;
-			if (dictionary.TryGetValue(key, out ret))
-				return ret;
-			return defValue;
+            if (dictionary.TryGetValue(key, out TValue ret))
+                return ret;
+            return defValue;
 		}
 
 		/// <summary>
@@ -43,10 +42,9 @@ namespace ConfuserNext.Core {
 			this Dictionary<TKey, TValue> dictionary,
 			TKey key,
 			Func<TKey, TValue> defValueFactory) {
-			TValue ret;
-			if (dictionary.TryGetValue(key, out ret))
-				return ret;
-			return defValueFactory(key);
+            if (dictionary.TryGetValue(key, out TValue ret))
+                return ret;
+            return defValueFactory(key);
 		}
 
 		/// <summary>
@@ -61,10 +59,9 @@ namespace ConfuserNext.Core {
 		public static void AddListEntry<TKey, TValue>(this IDictionary<TKey, List<TValue>> self, TKey key, TValue value) {
 			if (key == null)
 				throw new ArgumentNullException("key");
-			List<TValue> list;
-			if (!self.TryGetValue(key, out list))
-				list = self[key] = new List<TValue>();
-			list.Add(value);
+            if (!self.TryGetValue(key, out List<TValue> list))
+                list = self[key] = new List<TValue>();
+            list.Add(value);
 		}
 
 		/// <summary>

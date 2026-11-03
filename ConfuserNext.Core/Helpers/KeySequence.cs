@@ -112,67 +112,74 @@ namespace ConfuserNext.Core.Helpers {
 						}
 					}
 					if (block.Footer.OpCode.Code == Code.Endfilter || block.Footer.OpCode.Code == Code.Endfinally) {
-						// Match the exit state within finally/fault/filter
-						List<ExceptionHandler> ehs;
-						if (!ehMap.TryGetValue(block, out ehs)) {
-							ehs = new List<ExceptionHandler>();
-							int footerIndex = graph.IndexOf(block.Footer);
-							foreach (var eh in graph.Body.ExceptionHandlers) {
-								if (eh.FilterStart != null && block.Footer.OpCode.Code == Code.Endfilter) {
-									if (footerIndex >= graph.IndexOf(eh.FilterStart) &&
-									    footerIndex < graph.IndexOf(eh.HandlerStart))
-										ehs.Add(eh);
-								}
-								else if (eh.HandlerType == ExceptionHandlerType.Finally ||
-								         eh.HandlerType == ExceptionHandlerType.Fault) {
-									if (footerIndex >= graph.IndexOf(eh.HandlerStart) &&
-									    (eh.HandlerEnd == null || footerIndex < graph.IndexOf(eh.HandlerEnd)))
-										ehs.Add(eh);
-								}
-							}
-							ehMap[block] = ehs;
-						}
-						foreach (var eh in ehs) {
-							uint ehVal;
-							if (finallyIds.TryGetValue(eh, out ehVal)) {
-								if (key.ExitState > ehVal) {
-									finallyIds[eh] = key.ExitState;
-									updated = true;
-								}
-								else if (key.ExitState < ehVal) {
-									key.ExitState = ehVal;
-									updated = true;
-								}
-							}
-							else {
-								finallyIds[eh] = key.ExitState;
-								updated = true;
-							}
-						}
+                        // Match the exit state within finally/fault/filter
+                        if (!ehMap.TryGetValue(block, out List<ExceptionHandler> ehs))
+                        {
+                            ehs = new List<ExceptionHandler>();
+                            int footerIndex = graph.IndexOf(block.Footer);
+                            foreach (var eh in graph.Body.ExceptionHandlers)
+                            {
+                                if (eh.FilterStart != null && block.Footer.OpCode.Code == Code.Endfilter)
+                                {
+                                    if (footerIndex >= graph.IndexOf(eh.FilterStart) &&
+                                        footerIndex < graph.IndexOf(eh.HandlerStart))
+                                        ehs.Add(eh);
+                                }
+                                else if (eh.HandlerType == ExceptionHandlerType.Finally ||
+                                         eh.HandlerType == ExceptionHandlerType.Fault)
+                                {
+                                    if (footerIndex >= graph.IndexOf(eh.HandlerStart) &&
+                                        (eh.HandlerEnd == null || footerIndex < graph.IndexOf(eh.HandlerEnd)))
+                                        ehs.Add(eh);
+                                }
+                            }
+                            ehMap[block] = ehs;
+                        }
+                        foreach (var eh in ehs) {
+                            if (finallyIds.TryGetValue(eh, out uint ehVal))
+                            {
+                                if (key.ExitState > ehVal)
+                                {
+                                    finallyIds[eh] = key.ExitState;
+                                    updated = true;
+                                }
+                                else if (key.ExitState < ehVal)
+                                {
+                                    key.ExitState = ehVal;
+                                    updated = true;
+                                }
+                            }
+                            else
+                            {
+                                finallyIds[eh] = key.ExitState;
+                                updated = true;
+                            }
+                        }
 					}
 					else if (block.Footer.OpCode.Code == Code.Leave || block.Footer.OpCode.Code == Code.Leave_S) {
-						// Match the exit state with finally/fault/filter
-						List<ExceptionHandler> ehs;
-						if (!ehMap.TryGetValue(block, out ehs)) {
-							ehs = new List<ExceptionHandler>();
-							int footerIndex = graph.IndexOf(block.Footer);
-							foreach (var eh in graph.Body.ExceptionHandlers) {
-								if (footerIndex >= graph.IndexOf(eh.TryStart) &&
-								    (eh.TryEnd == null || footerIndex < graph.IndexOf(eh.TryEnd)))
-									ehs.Add(eh);
-							}
-							ehMap[block] = ehs;
-						}
+                        // Match the exit state with finally/fault/filter
+                        if (!ehMap.TryGetValue(block, out List<ExceptionHandler> ehs))
+                        {
+                            ehs = new List<ExceptionHandler>();
+                            int footerIndex = graph.IndexOf(block.Footer);
+                            foreach (var eh in graph.Body.ExceptionHandlers)
+                            {
+                                if (footerIndex >= graph.IndexOf(eh.TryStart) &&
+                                    (eh.TryEnd == null || footerIndex < graph.IndexOf(eh.TryEnd)))
+                                    ehs.Add(eh);
+                            }
+                            ehMap[block] = ehs;
+                        }
 
-						uint? maxVal = null;
+                        uint? maxVal = null;
 						foreach (var eh in ehs) {
-							uint ehVal;
-							if (finallyIds.TryGetValue(eh, out ehVal) && (maxVal == null || ehVal > maxVal)) {
-								if (maxVal != null)
-									updated = true;
-								maxVal = ehVal;
-							}
-						}
+                            if (finallyIds.TryGetValue(eh, out uint ehVal) && (maxVal == null || ehVal > maxVal))
+                            {
+                                if (maxVal != null)
+                                    updated = true;
+                                maxVal = ehVal;
+                            }
+                        }
 						if (maxVal != null) {
 							if (key.ExitState > maxVal.Value) {
 								maxVal = key.ExitState;

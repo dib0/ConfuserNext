@@ -176,12 +176,10 @@ namespace ConfuserNext.Runtime {
 					if (peInfo == null)
 						return false;
 
-					IntPtr sectionAddr;
-					uint sectionSize;
-					if (!peInfo.FindSection(".text", out sectionAddr, out sectionSize))
-						return false;
+                    if (!peInfo.FindSection(".text", out IntPtr sectionAddr, out uint sectionSize))
+                        return false;
 
-					const int MAX_COUNTS = 50;
+                    const int MAX_COUNTS = 50;
 					var p = (byte*)sectionAddr;
 					byte* end = (byte*)sectionAddr + sectionSize;
 					for (; p < end; p++) {
@@ -209,9 +207,8 @@ namespace ConfuserNext.Runtime {
 							continue;
 						}
 
-						int count = 0;
-						addrCounts.TryGetValue(addr, out count);
-						count++;
+                        addrCounts.TryGetValue(addr, out int count);
+                        count++;
 						addrCounts[addr] = count;
 						if (count >= MAX_COUNTS)
 							break;
@@ -380,9 +377,8 @@ namespace ConfuserNext.Runtime {
 				if (timeOutOptionAddr == IntPtr.Zero)
 					return;
 
-				uint oldProtect;
-				VirtualProtect(timeOutOptionAddr, (int)ConfigDWORDInfo_defValue + 4, PAGE_EXECUTE_READWRITE, out oldProtect);
-				try {
+                VirtualProtect(timeOutOptionAddr, (int)ConfigDWORDInfo_defValue + 4, PAGE_EXECUTE_READWRITE, out uint oldProtect);
+                try {
 					// Set default timeout to 0 to make sure it fails immediately
 					*(uint*)((byte*)timeOutOptionAddr + ConfigDWORDInfo_defValue) = 0;
 				}
@@ -465,12 +461,10 @@ namespace ConfuserNext.Runtime {
 					if (peInfo == null)
 						return IntPtr.Zero;
 
-					IntPtr sectionAddr;
-					uint sectionSize;
-					if (!peInfo.FindSection(".text", out sectionAddr, out sectionSize))
-						return IntPtr.Zero;
+                    if (!peInfo.FindSection(".text", out IntPtr sectionAddr, out uint sectionSize))
+                        return IntPtr.Zero;
 
-					var ptr = (byte*)sectionAddr;
+                    var ptr = (byte*)sectionAddr;
 					byte* end = (byte*)sectionAddr + sectionSize;
 					for (; ptr < end; ptr++) {
 						IntPtr addr;
@@ -552,13 +546,11 @@ namespace ConfuserNext.Runtime {
 					if (peInfo == null)
 						return IntPtr.Zero;
 
-					IntPtr sectionAddr;
-					uint sectionSize;
-					if (!peInfo.FindSection(".rdata", out sectionAddr, out sectionSize) &&
-					    !peInfo.FindSection(".text", out sectionAddr, out sectionSize))
-						return IntPtr.Zero;
+                    if (!peInfo.FindSection(".rdata", out IntPtr sectionAddr, out uint sectionSize) &&
+                        !peInfo.FindSection(".text", out sectionAddr, out sectionSize))
+                        return IntPtr.Zero;
 
-					var p = (byte*)sectionAddr;
+                    var p = (byte*)sectionAddr;
 					byte* end = (byte*)sectionAddr + sectionSize;
 					for (; p < end; p++) {
 						try {
@@ -631,9 +623,8 @@ namespace ConfuserNext.Runtime {
 					return false;
 
 				var p = (byte*)threadProc;
-				uint oldProtect;
-				VirtualProtect(new IntPtr(p), 5, PAGE_EXECUTE_READWRITE, out oldProtect);
-				try {
+                VirtualProtect(new IntPtr(p), 5, PAGE_EXECUTE_READWRITE, out uint oldProtect);
+                try {
 					if (IntPtr.Size == 4) {
 						// xor eax,eax
 						p[0] = 0x33;
@@ -664,12 +655,10 @@ namespace ConfuserNext.Runtime {
 					if (peInfo == null)
 						return IntPtr.Zero;
 
-					IntPtr sectionAddr;
-					uint sectionSize;
-					if (!peInfo.FindSection(".text", out sectionAddr, out sectionSize))
-						return IntPtr.Zero;
+                    if (!peInfo.FindSection(".text", out IntPtr sectionAddr, out uint sectionSize))
+                        return IntPtr.Zero;
 
-					var p = (byte*)sectionAddr;
+                    var p = (byte*)sectionAddr;
 					byte* start = p;
 					byte* end = (byte*)sectionAddr + sectionSize;
 
@@ -774,12 +763,10 @@ namespace ConfuserNext.Runtime {
 					if (peInfo == null)
 						return false;
 
-					IntPtr sectionAddr;
-					uint sectionSize;
-					if (!peInfo.FindSection(".text", out sectionAddr, out sectionSize))
-						return false;
+                    if (!peInfo.FindSection(".text", out IntPtr sectionAddr, out uint sectionSize))
+                        return false;
 
-					const int MAX_COUNTS = 50;
+                    const int MAX_COUNTS = 50;
 					var p = (byte*)sectionAddr;
 					byte* end = (byte*)sectionAddr + sectionSize;
 					for (; p < end; p++) {
@@ -826,9 +813,8 @@ namespace ConfuserNext.Runtime {
 							continue;
 						}
 
-						int count = 0;
-						addrCounts.TryGetValue(addr, out count);
-						count++;
+                        addrCounts.TryGetValue(addr, out int count);
+                        count++;
 						addrCounts[addr] = count;
 						if (count >= MAX_COUNTS)
 							break;

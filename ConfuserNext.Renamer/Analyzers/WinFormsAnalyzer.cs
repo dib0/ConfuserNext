@@ -65,17 +65,18 @@ namespace ConfuserNext.Renamer.Analyzers {
 					erred = true;
 				}
 				else {
-					List<PropertyDef> props;
-					if (!properties.TryGetValue((string)propertyName.Operand, out props)) {
-						if (!erred)
-							context.Logger.WarnFormat("Failed to extract target property in '{0}'.", method.FullName);
-						erred = true;
-					}
-					else {
-						foreach (var property in props)
-							service.SetCanRename(property, false);
-					}
-				}
+                    if (!properties.TryGetValue((string)propertyName.Operand, out List<PropertyDef> props))
+                    {
+                        if (!erred)
+                            context.Logger.WarnFormat("Failed to extract target property in '{0}'.", method.FullName);
+                        erred = true;
+                    }
+                    else
+                    {
+                        foreach (var property in props)
+                            service.SetCanRename(property, false);
+                    }
+                }
 
 				Instruction dataMember = method.Body.Instructions[args[2 + (instrInfo.Item1 ? 1 : 0)]];
 				if (dataMember.OpCode.Code != Code.Ldstr) {
@@ -84,17 +85,18 @@ namespace ConfuserNext.Renamer.Analyzers {
 					erred = true;
 				}
 				else {
-					List<PropertyDef> props;
-					if (!properties.TryGetValue((string)dataMember.Operand, out props)) {
-						if (!erred)
-							context.Logger.WarnFormat("Failed to extract target property in '{0}'.", method.FullName);
-						erred = true;
-					}
-					else {
-						foreach (var property in props)
-							service.SetCanRename(property, false);
-					}
-				}
+                    if (!properties.TryGetValue((string)dataMember.Operand, out List<PropertyDef> props))
+                    {
+                        if (!erred)
+                            context.Logger.WarnFormat("Failed to extract target property in '{0}'.", method.FullName);
+                        erred = true;
+                    }
+                    else
+                    {
+                        foreach (var property in props)
+                            service.SetCanRename(property, false);
+                    }
+                }
 			}
 		}
 

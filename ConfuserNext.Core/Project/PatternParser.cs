@@ -163,12 +163,11 @@ namespace ConfuserNext.Core.Project {
 						ret = fn;
 					}
 					else {
-						bool boolValue;
-						if (bool.TryParse(token.Value, out boolValue))
-							ret = new LiteralExpression(boolValue);
-						else
-							throw UnknownToken(token);
-					}
+                        if (bool.TryParse(token.Value, out bool boolValue))
+                            ret = new LiteralExpression(boolValue);
+                        else
+                            throw UnknownToken(token);
+                    }
 
 					break;
 				default:

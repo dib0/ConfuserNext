@@ -108,11 +108,8 @@ namespace SevenZip.Compression.LZMA {
 			try {
 				SetStreams(inStream, outStream, inSize, outSize);
 				while (true) {
-					Int64 processedInSize;
-					Int64 processedOutSize;
-					bool finished;
-					CodeOneBlock(out processedInSize, out processedOutSize, out finished);
-					if (finished)
+                    CodeOneBlock(out long processedInSize, out long processedOutSize, out bool finished);
+                    if (finished)
 						return;
 					if (progress != null) {
 						progress.SetProgress(processedInSize, processedOutSize);
@@ -534,9 +531,8 @@ namespace SevenZip.Compression.LZMA {
 				cur++;
 				if (cur == lenEnd)
 					return Backward(out backRes, cur);
-				UInt32 newLen;
-				ReadMatchDistances(out newLen, out numDistancePairs);
-				if (newLen >= _numFastBytes) {
+                ReadMatchDistances(out uint newLen, out numDistancePairs);
+                if (newLen >= _numFastBytes) {
 					_numDistancePairs = numDistancePairs;
 					_longestMatchLength = newLen;
 					_longestMatchWasFound = true;
@@ -883,9 +879,9 @@ namespace SevenZip.Compression.LZMA {
 					Flush((UInt32)nowPos64);
 					return;
 				}
-				UInt32 len, numDistancePairs; // it's not used
-				ReadMatchDistances(out len, out numDistancePairs);
-				UInt32 posState = (UInt32)(nowPos64) & _posStateMask;
+                // it's not used
+                ReadMatchDistances(out uint len, out uint numDistancePairs);
+                UInt32 posState = (UInt32)(nowPos64) & _posStateMask;
 				_isMatch[(_state.Index << Base.kNumPosStatesBitsMax) + posState].Encode(_rangeEncoder, 0);
 				_state.UpdateChar();
 				Byte curByte = _matchFinder.GetIndexByte((Int32)(0 - _additionalOffset));
@@ -899,10 +895,9 @@ namespace SevenZip.Compression.LZMA {
 				return;
 			}
 			while (true) {
-				UInt32 pos;
-				UInt32 len = GetOptimum((UInt32)nowPos64, out pos);
+                UInt32 len = GetOptimum((UInt32)nowPos64, out uint pos);
 
-				UInt32 posState = ((UInt32)nowPos64) & _posStateMask;
+                UInt32 posState = ((UInt32)nowPos64) & _posStateMask;
 				UInt32 complexState = (_state.Index << Base.kNumPosStatesBitsMax) + posState;
 				if (len == 1 && pos == 0xFFFFFFFF) {
 					_isMatch[complexState].Encode(_rangeEncoder, 0);

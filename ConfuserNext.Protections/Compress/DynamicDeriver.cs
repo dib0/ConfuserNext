@@ -14,10 +14,9 @@ namespace ConfuserNext.Protections.Compress {
 		Action<uint[], uint[]> encryptFunc;
 
 		public void Init(ConfuserContext ctx, RandomGenerator random) {
-			StatementBlock dummy;
-			ctx.Registry.GetService<IDynCipherService>().GenerateCipherPair(random, out derivation, out dummy);
+            ctx.Registry.GetService<IDynCipherService>().GenerateCipherPair(random, out derivation, out StatementBlock dummy);
 
-			var dmCodeGen = new DMCodeGen(typeof(void), new[] {
+            var dmCodeGen = new DMCodeGen(typeof(void), new[] {
 				Tuple.Create("{BUFFER}", typeof(uint[])),
 				Tuple.Create("{KEY}", typeof(uint[]))
 			});

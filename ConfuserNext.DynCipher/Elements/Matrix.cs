@@ -98,13 +98,12 @@ namespace ConfuserNext.DynCipher.Elements {
 			Expression c = context.GetDataExpression(DataIndexes[2]);
 			Expression d = context.GetDataExpression(DataIndexes[3]);
 
-			VariableExpression ta, tb, tc, td;
 
-			Func<uint, LiteralExpression> l = v => (LiteralExpression)v;
-			using (context.AcquireTempVar(out ta))
-			using (context.AcquireTempVar(out tb))
-			using (context.AcquireTempVar(out tc))
-			using (context.AcquireTempVar(out td)) {
+            Func<uint, LiteralExpression> l = v => (LiteralExpression)v;
+            using (context.AcquireTempVar(out VariableExpression ta))
+			using (context.AcquireTempVar(out VariableExpression tb))
+			using (context.AcquireTempVar(out VariableExpression tc))
+			using (context.AcquireTempVar(out VariableExpression td)) {
 				context.Emit(new AssignmentStatement {
 					Value = a * l(k[0, 0]) + b * l(k[0, 1]) + c * l(k[0, 2]) + d * l(k[0, 3]),
 					Target = ta

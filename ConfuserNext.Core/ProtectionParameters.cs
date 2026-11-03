@@ -46,12 +46,11 @@ namespace ConfuserNext.Core {
 		/// <param name="defValue">Default value if the parameter does not exist.</param>
 		/// <returns>The value of the parameter.</returns>
 		public T GetParameter<T>(ConfuserContext context, IDnlibDef target, string name, T defValue = default(T)) {
-			Dictionary<string, string> parameters;
 
-			if (comp == null)
-				return defValue;
+            if (comp == null)
+                return defValue;
 
-			if (comp is Packer && target == null) {
+            if (comp is Packer && target == null) {
 				// Packer parameters are stored in modules
 				target = context.Modules[0];
 			}
@@ -59,21 +58,21 @@ namespace ConfuserNext.Core {
 			var objParams = context.Annotations.Get<ProtectionSettings>(target, ParametersKey);
 			if (objParams == null)
 				return defValue;
-			if (!objParams.TryGetValue(comp, out parameters))
+			if (!objParams.TryGetValue(comp, out Dictionary<string, string> parameters))
 				return defValue;
 
-			string ret;
-			if (parameters.TryGetValue(name, out ret)) {
-				Type paramType = typeof(T);
-				Type nullable = Nullable.GetUnderlyingType(paramType);
-				if (nullable != null)
-					paramType = nullable;
+            if (parameters.TryGetValue(name, out string ret))
+            {
+                Type paramType = typeof(T);
+                Type nullable = Nullable.GetUnderlyingType(paramType);
+                if (nullable != null)
+                    paramType = nullable;
 
-				if (paramType.IsEnum)
-					return (T)Enum.Parse(paramType, ret, true);
-				return (T)Convert.ChangeType(ret, paramType);
-			}
-			return defValue;
+                if (paramType.IsEnum)
+                    return (T)Enum.Parse(paramType, ret, true);
+                return (T)Convert.ChangeType(ret, paramType);
+            }
+            return defValue;
 		}
 
 		/// <summary>

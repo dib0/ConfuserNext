@@ -85,9 +85,11 @@ namespace ConfuserNext.Core {
 
 			bool ok = false;
 			try {
-				var asmResolver = new AssemblyResolver();
-				asmResolver.EnableTypeDefCache = true;
-				asmResolver.DefaultModuleContext = new ModuleContext(asmResolver);
+                var asmResolver = new AssemblyResolver
+                {
+                    EnableTypeDefCache = true
+                };
+                asmResolver.DefaultModuleContext = new ModuleContext(asmResolver);
 				context.Resolver = asmResolver;
 				context.BaseDirectory = Path.Combine(Environment.CurrentDirectory, parameters.Project.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
 				context.OutputDirectory = Path.Combine(parameters.Project.BaseDirectory, parameters.Project.OutputDirectory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar);
@@ -98,15 +100,12 @@ namespace ConfuserNext.Core {
 
 				Marker marker = parameters.GetMarker();
 
-				// 2. Discover plugins
-				context.Logger.Debug("Discovering plugins...");
+                // 2. Discover plugins
+                context.Logger.Debug("Discovering plugins...");
 
-				IList<Protection> prots;
-				IList<Packer> packers;
-				IList<ConfuserComponent> components;
-				parameters.GetPluginDiscovery().GetPlugins(context, out prots, out packers, out components);
+                parameters.GetPluginDiscovery().GetPlugins(context, out IList<Protection> prots, out IList<Packer> packers, out IList<ConfuserComponent> components);
 
-				context.Logger.InfoFormat("Discovered {0} protections, {1} packers.", prots.Count, packers.Count);
+                context.Logger.InfoFormat("Discovered {0} protections, {1} packers.", prots.Count, packers.Count);
 
 				context.CheckCancellation();
 
@@ -141,6 +140,20 @@ namespace ConfuserNext.Core {
 				context.OutputPaths = Enumerable.Repeat<string>(null, context.Modules.Count).ToArray();
 				context.Packer = markings.Packer;
 				context.ExternalModules = markings.ExternalModules;
+
+				var modernFrameworkPaths = GetModernFrameworkSearchPaths(context.Modules).ToList();
+				if (modernFrameworkPaths.Count > 0) {
+					foreach (string frameworkPath in modernFrameworkPaths)
+						asmResolver.PostSearchPaths.Add(frameworkPath);
+					// Modern .NET facade assemblies (e.g. System.Runtime.dll) exist in both the
+					// .NET Framework GAC and every installed shared framework, all under the same
+					// simple name but with different (and mutually incompatible) contents. Without
+					// requiring an exact version match, the resolver can silently return a
+					// same-named assembly from the wrong framework instead of the one just added
+					// above. Loose matching is still used when nothing modern was found, to avoid
+					// changing resolution behavior for plain .NET Framework targets.
+					asmResolver.FindExactMatch = true;
+				}
 
 				context.CheckCancellation();
 
@@ -504,6 +517,105 @@ namespace ConfuserNext.Core {
 				yield return "v4.5 " + releaseKey;
 			}
 		}
+
+		/// <summary>
+		///     Gets the directories of the modern .NET shared frameworks (Microsoft.NETCore.App,
+		///     Microsoft.WindowsDesktop.App, Microsoft.AspNetCore.App, ...) that match the .NET
+		///     (Core) major version(s) targeted by <paramref name="modules" />, so that
+		///     <see cref="AssemblyResolver" /> can resolve references made by them. These
+		///     assemblies have no GAC equivalent to fall back to, unlike .NET Framework ones.
+		/// </summary>
+		/// <remarks>
+		///     Only the highest installed version per shared framework/major version is used
+		///     (mimicking the real runtime's roll-forward behavior). The machine commonly has many
+		///     shared frameworks installed side by side (including old, incompatible major
+		///     versions); blindly adding all of them lets <see cref="AssemblyResolver" /> pick a
+		///     wrong-version facade (e.g. a leftover .NET Core 1.x System.Runtime.dll) before ever
+		///     trying the right one, and it does not continue searching after a version mismatch.
+		/// </remarks>
+		static IEnumerable<string> GetModernFrameworkSearchPaths(IEnumerable<ModuleDefMD> modules) {
+#if NETFRAMEWORK
+			yield break;
+#else
+			var majorVersions = new HashSet<int>();
+			foreach (ModuleDefMD module in modules) {
+				int? major = GetNetCoreAppMajorVersion(module);
+				if (major != null)
+					majorVersions.Add(major.Value);
+			}
+			if (majorVersions.Count == 0)
+				yield break;
+
+			string coreLibDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+			if (string.IsNullOrEmpty(coreLibDir))
+				yield break;
+
+			// coreLibDir is typically "<dotnet root>/shared/Microsoft.NETCore.App/<version>"
+			DirectoryInfo sharedDir = Directory.GetParent(coreLibDir)?.Parent;
+			if (sharedDir == null || !sharedDir.Exists)
+				yield break;
+
+			foreach (DirectoryInfo frameworkDir in sharedDir.GetDirectories()) {
+				foreach (int major in majorVersions) {
+					DirectoryInfo best = null;
+					System.Version bestVersion = null;
+					foreach (DirectoryInfo versionDir in frameworkDir.GetDirectories()) {
+						System.Version version = TryParseVersion(versionDir.Name);
+						if (version == null || version.Major != major)
+							continue;
+						if (bestVersion == null || version > bestVersion) {
+							bestVersion = version;
+							best = versionDir;
+						}
+					}
+					if (best != null)
+						yield return best.FullName;
+				}
+			}
+#endif
+		}
+
+#if !NETFRAMEWORK
+		/// <summary>
+		///     Gets the .NETCoreApp major version targeted by <paramref name="module" />'s
+		///     assembly (e.g. <c>8</c> for ".NETCoreApp,Version=v8.0"), or <c>null</c> if it does
+		///     not target .NET (Core) (e.g. .NET Framework modules resolve via the GAC instead).
+		/// </summary>
+		static int? GetNetCoreAppMajorVersion(ModuleDefMD module) {
+			AssemblyDef asm = module?.Assembly;
+			if (asm == null)
+				return null;
+
+			const string attrName = "System.Runtime.Versioning.TargetFrameworkAttribute";
+			const string prefix = ".NETCoreApp,Version=v";
+			foreach (CustomAttribute ca in asm.CustomAttributes) {
+				if (ca.TypeFullName != attrName || ca.ConstructorArguments.Count == 0)
+					continue;
+
+				string tfm = ca.ConstructorArguments[0].Value?.ToString();
+				if (tfm == null || !tfm.StartsWith(prefix, StringComparison.Ordinal))
+					continue;
+
+				string verPart = tfm.Substring(prefix.Length);
+				int dot = verPart.IndexOf('.');
+				string majorStr = dot < 0 ? verPart : verPart.Substring(0, dot);
+				if (int.TryParse(majorStr, out int major))
+					return major;
+			}
+			return null;
+		}
+
+		/// <summary>
+		///     Parses a shared-framework directory name (e.g. "8.0.1" or
+		///     "3.0.0-preview5-27626-15") into a <see cref="Version" />, ignoring any
+		///     prerelease/build suffix after a '-'. Returns <c>null</c> if it isn't a version.
+		/// </summary>
+		static System.Version TryParseVersion(string directoryName) {
+			int dash = directoryName.IndexOf('-');
+			string versionPart = dash < 0 ? directoryName : directoryName.Substring(0, dash);
+			return System.Version.TryParse(versionPart, out System.Version version) ? version : null;
+		}
+#endif
 
 		/// <summary>
 		///     Prints the environment information when error occurred.

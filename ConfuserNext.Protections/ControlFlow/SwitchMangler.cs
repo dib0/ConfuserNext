@@ -14,10 +14,9 @@ namespace ConfuserNext.Protections.ControlFlow {
 			public Dictionary<uint, int> AfterStack;
 
 			static void Increment(Dictionary<uint, int> counts, uint key) {
-				int value;
-				if (!counts.TryGetValue(key, out value))
-					value = 0;
-				counts[key] = value + 1;
+                if (!counts.TryGetValue(key, out int value))
+                    value = 0;
+                counts[key] = value + 1;
 			}
 
 			public Trace(CilBody body, bool hasReturnValue) {
@@ -100,17 +99,15 @@ namespace ConfuserNext.Protections.ControlFlow {
 			}
 
 			public bool IsBranchTarget(uint offset) {
-				List<Instruction> src;
-				if (BrRefs.TryGetValue(offset, out src))
-					return src.Count > 0;
-				return false;
+                if (BrRefs.TryGetValue(offset, out List<Instruction> src))
+                    return src.Count > 0;
+                return false;
 			}
 
 			public bool HasMultipleSources(uint offset) {
-				int src;
-				if (RefCount.TryGetValue(offset, out src))
-					return src > 1;
-				return false;
+                if (RefCount.TryGetValue(offset, out int src))
+                    return src > 1;
+                return false;
 			}
 		}
 
@@ -250,22 +247,22 @@ namespace ConfuserNext.Protections.ControlFlow {
 				hasUnknownSource = instrs => instrs.Any(instr => {
 					if (trace.HasMultipleSources(instr.Offset))
 						return true;
-					List<Instruction> srcs;
-					if (trace.BrRefs.TryGetValue(instr.Offset, out srcs)) {
-						// Target of switch => assume unknown
-						if (srcs.Any(src => src.Operand is Instruction[]))
-							return true;
+                    if (trace.BrRefs.TryGetValue(instr.Offset, out List<Instruction> srcs))
+                    {
+                        // Target of switch => assume unknown
+                        if (srcs.Any(src => src.Operand is Instruction[]))
+                            return true;
 
-						// Not within current instruction block / targeted in first statement
-						if (srcs.Any(src => src.Offset <= statements.First.Value.Last().Offset ||
-						                    src.Offset >= block.Instructions.Last().Offset))
-							return true;
+                        // Not within current instruction block / targeted in first statement
+                        if (srcs.Any(src => src.Offset <= statements.First.Value.Last().Offset ||
+                                            src.Offset >= block.Instructions.Last().Offset))
+                            return true;
 
-						// Not targeted by the last of statements
-						if (srcs.Any(src => statementLast.Contains(src)))
-							return true;
-					}
-					return false;
+                        // Not targeted by the last of statements
+                        if (srcs.Any(src => statementLast.Contains(src)))
+                            return true;
+                    }
+                    return false;
 				});
 
 				var switchInstr = new Instruction(OpCodes.Switch);
@@ -303,84 +300,89 @@ namespace ConfuserNext.Protections.ControlFlow {
 							// Unconditional
 
 							var target = (Instruction)newStatement.Last().Operand;
-							int brKey;
-							if (!trace.IsBranchTarget(newStatement.Last().Offset) &&
-							    statementKeys.TryGetValue(target, out brKey)) {
-								var targetKey = predicate != null ? predicate.GetSwitchKey(brKey) : brKey;
-								var unkSrc = hasUnknownSource(newStatement);
+                            if (!trace.IsBranchTarget(newStatement.Last().Offset) &&
+                                statementKeys.TryGetValue(target, out int brKey))
+                            {
+                                var targetKey = predicate != null ? predicate.GetSwitchKey(brKey) : brKey;
+                                var unkSrc = hasUnknownSource(newStatement);
 
-								newStatement.RemoveAt(newStatement.Count - 1);
+                                newStatement.RemoveAt(newStatement.Count - 1);
 
-								if (unkSrc) {
-									newStatement.Add(Instruction.Create(OpCodes.Ldc_I4, targetKey));
-								}
-								else {
-									var thisKey = key[i];
-									var r = ctx.Random.NextInt32();
-									newStatement.Add(Instruction.Create(OpCodes.Ldloc, local));
-									newStatement.Add(Instruction.CreateLdcI4(r));
-									newStatement.Add(Instruction.Create(OpCodes.Mul));
-									newStatement.Add(Instruction.Create(OpCodes.Ldc_I4, (thisKey * r) ^ targetKey));
-									newStatement.Add(Instruction.Create(OpCodes.Xor));
-								}
+                                if (unkSrc)
+                                {
+                                    newStatement.Add(Instruction.Create(OpCodes.Ldc_I4, targetKey));
+                                }
+                                else
+                                {
+                                    var thisKey = key[i];
+                                    var r = ctx.Random.NextInt32();
+                                    newStatement.Add(Instruction.Create(OpCodes.Ldloc, local));
+                                    newStatement.Add(Instruction.CreateLdcI4(r));
+                                    newStatement.Add(Instruction.Create(OpCodes.Mul));
+                                    newStatement.Add(Instruction.Create(OpCodes.Ldc_I4, (thisKey * r) ^ targetKey));
+                                    newStatement.Add(Instruction.Create(OpCodes.Xor));
+                                }
 
-								ctx.AddJump(newStatement, switchHdr[1]);
-								ctx.AddJunk(newStatement);
-								operands[keyId[i]] = newStatement[0];
-								converted = true;
-							}
-						}
+                                ctx.AddJump(newStatement, switchHdr[1]);
+                                ctx.AddJunk(newStatement);
+                                operands[keyId[i]] = newStatement[0];
+                                converted = true;
+                            }
+                        }
 						else if (newStatement.Last().IsConditionalBranch()) {
 							// Conditional
 
 							var target = (Instruction)newStatement.Last().Operand;
-							int brKey;
-							if (!trace.IsBranchTarget(newStatement.Last().Offset) &&
-							    statementKeys.TryGetValue(target, out brKey)) {
-								bool unkSrc = hasUnknownSource(newStatement);
-								int nextKey = key[i + 1];
-								OpCode condBr = newStatement.Last().OpCode;
-								newStatement.RemoveAt(newStatement.Count - 1);
+                            if (!trace.IsBranchTarget(newStatement.Last().Offset) &&
+                                statementKeys.TryGetValue(target, out int brKey))
+                            {
+                                bool unkSrc = hasUnknownSource(newStatement);
+                                int nextKey = key[i + 1];
+                                OpCode condBr = newStatement.Last().OpCode;
+                                newStatement.RemoveAt(newStatement.Count - 1);
 
-								if (ctx.Random.NextBoolean()) {
-									condBr = InverseBranch(condBr);
-									int tmp = brKey;
-									brKey = nextKey;
-									nextKey = tmp;
-								}
+                                if (ctx.Random.NextBoolean())
+                                {
+                                    condBr = InverseBranch(condBr);
+                                    int tmp = brKey;
+                                    brKey = nextKey;
+                                    nextKey = tmp;
+                                }
 
-								var thisKey = key[i];
-								int r = 0, xorKey = 0;
-								if (!unkSrc) {
-									r = ctx.Random.NextInt32();
-									xorKey = thisKey * r;
-								}
+                                var thisKey = key[i];
+                                int r = 0, xorKey = 0;
+                                if (!unkSrc)
+                                {
+                                    r = ctx.Random.NextInt32();
+                                    xorKey = thisKey * r;
+                                }
 
-								Instruction brKeyInstr = Instruction.CreateLdcI4(xorKey ^ (predicate != null ? predicate.GetSwitchKey(brKey) : brKey));
-								Instruction nextKeyInstr = Instruction.CreateLdcI4(xorKey ^ (predicate != null ? predicate.GetSwitchKey(nextKey) : nextKey));
-								Instruction pop = Instruction.Create(OpCodes.Pop);
+                                Instruction brKeyInstr = Instruction.CreateLdcI4(xorKey ^ (predicate != null ? predicate.GetSwitchKey(brKey) : brKey));
+                                Instruction nextKeyInstr = Instruction.CreateLdcI4(xorKey ^ (predicate != null ? predicate.GetSwitchKey(nextKey) : nextKey));
+                                Instruction pop = Instruction.Create(OpCodes.Pop);
 
-								newStatement.Add(Instruction.Create(condBr, brKeyInstr));
-								newStatement.Add(nextKeyInstr);
-								newStatement.Add(Instruction.Create(OpCodes.Dup));
-								newStatement.Add(Instruction.Create(OpCodes.Br, pop));
-								newStatement.Add(brKeyInstr);
-								newStatement.Add(Instruction.Create(OpCodes.Dup));
-								newStatement.Add(pop);
+                                newStatement.Add(Instruction.Create(condBr, brKeyInstr));
+                                newStatement.Add(nextKeyInstr);
+                                newStatement.Add(Instruction.Create(OpCodes.Dup));
+                                newStatement.Add(Instruction.Create(OpCodes.Br, pop));
+                                newStatement.Add(brKeyInstr);
+                                newStatement.Add(Instruction.Create(OpCodes.Dup));
+                                newStatement.Add(pop);
 
-								if (!unkSrc) {
-									newStatement.Add(Instruction.Create(OpCodes.Ldloc, local));
-									newStatement.Add(Instruction.CreateLdcI4(r));
-									newStatement.Add(Instruction.Create(OpCodes.Mul));
-									newStatement.Add(Instruction.Create(OpCodes.Xor));
-								}
+                                if (!unkSrc)
+                                {
+                                    newStatement.Add(Instruction.Create(OpCodes.Ldloc, local));
+                                    newStatement.Add(Instruction.CreateLdcI4(r));
+                                    newStatement.Add(Instruction.Create(OpCodes.Mul));
+                                    newStatement.Add(Instruction.Create(OpCodes.Xor));
+                                }
 
-								ctx.AddJump(newStatement, switchHdr[1]);
-								ctx.AddJunk(newStatement);
-								operands[keyId[i]] = newStatement[0];
-								converted = true;
-							}
-						}
+                                ctx.AddJump(newStatement, switchHdr[1]);
+                                ctx.AddJunk(newStatement);
+                                operands[keyId[i]] = newStatement[0];
+                                converted = true;
+                            }
+                        }
 
 						if (!converted) {
 							// Normal

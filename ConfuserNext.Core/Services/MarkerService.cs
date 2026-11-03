@@ -40,10 +40,9 @@ namespace ConfuserNext.Core.Services {
 
 		/// <inheritdoc />
 		public ConfuserComponent GetHelperParent(IDnlibDef def) {
-			ConfuserComponent parent;
-			if (!helperParents.TryGetValue(def, out parent))
-				return null;
-			return parent;
+            if (!helperParents.TryGetValue(def, out ConfuserComponent parent))
+                return null;
+            return parent;
 		}
 	}
 

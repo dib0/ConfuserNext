@@ -30,12 +30,12 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 		}
 
 		Tuple<int, int> GetKey(RandomGenerator random, MethodDef init) {
-			Tuple<int, int> ret;
-			if (!keys.TryGetValue(init, out ret)) {
-				int key = random.NextInt32() | 1;
-				keys[init] = ret = Tuple.Create(key, (int)MathsUtils.modInv((uint)key));
-			}
-			return ret;
+            if (!keys.TryGetValue(init, out Tuple<int, int> ret))
+            {
+                int key = random.NextInt32() | 1;
+                keys[init] = ret = Tuple.Create(key, (int)MathsUtils.modInv((uint)key));
+            }
+            return ret;
 		}
 	}
 }

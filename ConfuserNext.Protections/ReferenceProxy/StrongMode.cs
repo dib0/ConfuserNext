@@ -47,9 +47,8 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 						return null;
 				}
 
-				int push, pop;
-				currentInstr.CalculateStackUsage(out push, out pop);
-				currentStack += pop;
+                currentInstr.CalculateStackUsage(out int push, out int pop);
+                currentStack += pop;
 				currentStack -= push;
 
 				// No branch target
@@ -70,9 +69,8 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 			if (declType.IsGlobalModuleType) // Reflection doesn't like global methods too.
 				return;
 
-			int push, pop;
-			invoke.CalculateStackUsage(out push, out pop);
-			int? begin = TraceBeginning(ctx, instrIndex, pop);
+            invoke.CalculateStackUsage(out int push, out int pop);
+            int? begin = TraceBeginning(ctx, instrIndex, pop);
 			// Fail to trace the arguments => fall back to bridge method
 			bool fallBack = begin == null;
 
@@ -95,18 +93,19 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 				return;
 
 			Tuple<Code, IMethod, IRPEncoding> key = Tuple.Create(instr.OpCode.Code, target, ctx.EncodingHandler);
-			Tuple<FieldDef, MethodDef> proxy;
-			if (fields.TryGetValue(key, out proxy)) {
-				if (proxy.Item2 != null) {
-					instr.OpCode = OpCodes.Call;
-					instr.Operand = proxy.Item2;
-					return;
-				}
-			}
-			else
-				proxy = new Tuple<FieldDef, MethodDef>(null, null);
+            if (fields.TryGetValue(key, out Tuple<FieldDef, MethodDef> proxy))
+            {
+                if (proxy.Item2 != null)
+                {
+                    instr.OpCode = OpCodes.Call;
+                    instr.Operand = proxy.Item2;
+                    return;
+                }
+            }
+            else
+                proxy = new Tuple<FieldDef, MethodDef>(null, null);
 
-			MethodSig sig = CreateProxySignature(ctx, target, instr.OpCode.Code == Code.Newobj);
+            MethodSig sig = CreateProxySignature(ctx, target, instr.OpCode.Code == Code.Newobj);
 			TypeDef delegateType = GetDelegateType(ctx, sig);
 
 			// Create proxy field
@@ -141,15 +140,15 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 			TypeDef delegateType = GetDelegateType(ctx, sig);
 
 			Tuple<Code, IMethod, IRPEncoding> key = Tuple.Create(instr.OpCode.Code, target, ctx.EncodingHandler);
-			Tuple<FieldDef, MethodDef> proxy;
-			if (!fields.TryGetValue(key, out proxy)) {
-				// Create proxy field
-				proxy = new Tuple<FieldDef, MethodDef>(CreateField(ctx, delegateType), null);
-				fields[key] = proxy;
-			}
+            if (!fields.TryGetValue(key, out Tuple<FieldDef, MethodDef> proxy))
+            {
+                // Create proxy field
+                proxy = new Tuple<FieldDef, MethodDef>(CreateField(ctx, delegateType), null);
+                fields[key] = proxy;
+            }
 
-			// Insert field load & replace instruction
-			if (argBeginIndex == instrIndex) {
+            // Insert field load & replace instruction
+            if (argBeginIndex == instrIndex) {
 				ctx.Body.Instructions.Insert(instrIndex + 1,
 				                             new Instruction(OpCodes.Call, delegateType.FindMethod("Invoke")));
 				instr.OpCode = OpCodes.Ldsfld;
@@ -221,14 +220,13 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 				injectedAttr.Name = ctx.Name.RandomName();
 				injectedAttr.Namespace = string.Empty;
 
-				Expression expression, inverse;
-				var var = new Variable("{VAR}");
-				var result = new Variable("{RESULT}");
+                var var = new Variable("{VAR}");
+                var result = new Variable("{RESULT}");
 
 				ctx.DynCipher.GenerateExpressionPair(
 					ctx.Random,
 					new VariableExpression { Variable = var }, new VariableExpression { Variable = result },
-					ctx.Depth, out expression, out inverse);
+					ctx.Depth, out Expression expression, out Expression inverse);
 
 				var expCompiled = new DMCodeGen(typeof(int), new[] { Tuple.Create("{VAR}", typeof(int)) })
 					.GenerateCIL(expression)
@@ -257,11 +255,10 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 		}
 
 		InitMethodDesc GetInitMethod(RPContext ctx, IRPEncoding encoding) {
-			InitMethodDesc[] initDescs;
-			if (!inits.TryGetValue(encoding, out initDescs))
-				inits[encoding] = initDescs = new InitMethodDesc[ctx.InitCount];
+            if (!inits.TryGetValue(encoding, out InitMethodDesc[] initDescs))
+                inits[encoding] = initDescs = new InitMethodDesc[ctx.InitCount];
 
-			int index = ctx.Random.NextInt32(initDescs.Length);
+            int index = ctx.Random.NextInt32(initDescs.Length);
 			if (initDescs[index] == null) {
 				TypeDef rtType = ctx.Context.Registry.GetService<IRuntimeService>().GetRuntimeType("ConfuserNext.Runtime.RefProxyStrong");
 				MethodDef injectedMethod = InjectHelper.Inject(rtType.FindMethod("Initialize"), ctx.Module);

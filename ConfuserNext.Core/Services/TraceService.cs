@@ -208,9 +208,8 @@ namespace ConfuserNext.Core.Services {
 			if (instr.OpCode.Code != Code.Call && instr.OpCode.Code != Code.Callvirt && instr.OpCode.Code != Code.Newobj)
 				throw new ArgumentException("Invalid call instruction.", "instr");
 
-			int push, pop;
-			instr.CalculateStackUsage(out push, out pop); // pop is number of arguments
-			if (pop == 0)
+            instr.CalculateStackUsage(out int push, out int pop); // pop is number of arguments
+            if (pop == 0)
 				return new int[0];
 
 			int instrIndex = offset2index[instr.Offset];

@@ -48,55 +48,58 @@ namespace ConfuserNext.Renamer.Analyzers {
 
 			foreach (var res in wpfResInfo.Values)
 				foreach (var doc in res.Values) {
-					List<IBAMLReference> references;
-					if (bamlRefs.TryGetValue(doc.DocumentName, out references)) {
-						var newName = doc.DocumentName.ToUpperInvariant();
+                    if (bamlRefs.TryGetValue(doc.DocumentName, out List<IBAMLReference> references))
+                    {
+                        var newName = doc.DocumentName.ToUpperInvariant();
 
-						#region old code
+                        #region old code
 
-						//if (newName.EndsWith(".BAML"))
-						//    newName = service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".baml";
-						//else if (newName.EndsWith(".XAML"))
-						//    newName = service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".xaml";
+                        //if (newName.EndsWith(".BAML"))
+                        //    newName = service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".baml";
+                        //else if (newName.EndsWith(".XAML"))
+                        //    newName = service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".xaml";
 
-						#endregion
+                        #endregion
 
-						#region Niks patch fix
+                        #region Niks patch fix
 
-						/*
+                        /*
                          * Nik's patch for maintaining relative paths. If the xaml file is referenced in this manner
                          * "/some.namespace;component/somefolder/somecontrol.xaml"
                          * then we want to keep the relative path and namespace intact. We should be obfuscating it like this - /some.namespace;component/somefolder/asjdjh2398498dswk.xaml
                         * */
 
-						string[] completePath = newName.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries);
-						string newShinyName = string.Empty;
-						for (int i = 0; i <= completePath.Length - 2; i++) {
-							newShinyName += completePath[i].ToLowerInvariant() + "/";
-						}
-						if (newName.EndsWith(".BAML"))
-							newName = newShinyName + service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".baml";
-						else if (newName.EndsWith(".XAML"))
-							newName = newShinyName + service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".xaml";
+                        string[] completePath = newName.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries);
+                        string newShinyName = string.Empty;
+                        for (int i = 0; i <= completePath.Length - 2; i++)
+                        {
+                            newShinyName += completePath[i].ToLowerInvariant() + "/";
+                        }
+                        if (newName.EndsWith(".BAML"))
+                            newName = newShinyName + service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".baml";
+                        else if (newName.EndsWith(".XAML"))
+                            newName = newShinyName + service.RandomName(RenameMode.Letters).ToLowerInvariant() + ".xaml";
 
-						context.Logger.Debug(String.Format("Preserving virtual paths. Replaced {0} with {1}", doc.DocumentName, newName));
+                        context.Logger.Debug(String.Format("Preserving virtual paths. Replaced {0} with {1}", doc.DocumentName, newName));
 
-						#endregion
+                        #endregion
 
-						bool renameOk = true;
-						foreach (var bamlRef in references)
-							if (!bamlRef.CanRename(doc.DocumentName, newName)) {
-								renameOk = false;
-								break;
-							}
+                        bool renameOk = true;
+                        foreach (var bamlRef in references)
+                            if (!bamlRef.CanRename(doc.DocumentName, newName))
+                            {
+                                renameOk = false;
+                                break;
+                            }
 
-						if (renameOk) {
-							foreach (var bamlRef in references)
-								bamlRef.Rename(doc.DocumentName, newName);
-							doc.DocumentName = newName;
-						}
-					}
-				}
+                        if (renameOk)
+                        {
+                            foreach (var bamlRef in references)
+                                bamlRef.Rename(doc.DocumentName, newName);
+                            doc.DocumentName = newName;
+                        }
+                    }
+                }
 		}
 
 		public void PostRename(ConfuserContext context, INameService service, ProtectionParameters parameters, IDnlibDef def) {
@@ -109,34 +112,31 @@ namespace ConfuserNext.Renamer.Analyzers {
 				return;
 
 			foreach (EmbeddedResource res in module.Resources.OfType<EmbeddedResource>().ToList()) {
-				Dictionary<string, BamlDocument> resInfo;
 
-				if (!wpfResInfo.TryGetValue(res.Name, out resInfo))
-					continue;
+                if (!wpfResInfo.TryGetValue(res.Name, out Dictionary<string, BamlDocument> resInfo))
+                    continue;
 
-				var stream = new MemoryStream();
+                var stream = new MemoryStream();
 				var writer = new ResourceWriter(stream);
 
 				var reader = new ResourceReader(res.CreateReader().AsStream());
 				IDictionaryEnumerator enumerator = reader.GetEnumerator();
 				while (enumerator.MoveNext()) {
 					var name = (string)enumerator.Key;
-					string typeName;
-					byte[] data;
-					reader.GetResourceData(name, out typeName, out data);
+                    reader.GetResourceData(name, out string typeName, out byte[] data);
 
-					BamlDocument document;
-					if (resInfo.TryGetValue(name, out document)) {
-						var docStream = new MemoryStream();
-						docStream.Position = 4;
-						BamlWriter.WriteDocument(document, docStream);
-						docStream.Position = 0;
-						docStream.Write(BitConverter.GetBytes((int)docStream.Length - 4), 0, 4);
-						data = docStream.ToArray();
-						name = document.DocumentName;
-					}
+                    if (resInfo.TryGetValue(name, out BamlDocument document))
+                    {
+                        var docStream = new MemoryStream();
+                        docStream.Position = 4;
+                        BamlWriter.WriteDocument(document, docStream);
+                        docStream.Position = 0;
+                        docStream.Write(BitConverter.GetBytes((int)docStream.Length - 4), 0, 4);
+                        data = docStream.ToArray();
+                        name = document.DocumentName;
+                    }
 
-					writer.AddResourceData(name, typeName, data);
+                    writer.AddResourceData(name, typeName, data);
 				}
 				writer.Generate();
 				var newRes = new EmbeddedResource(res.Name, stream.ToArray(), res.Attributes);
@@ -322,10 +322,8 @@ namespace ConfuserNext.Renamer.Analyzers {
 					if (!name.EndsWith(".baml"))
 						continue;
 
-					string typeName;
-					byte[] data;
-					reader.GetResourceData(name, out typeName, out data);
-					BamlDocument document = analyzer.Analyze(module, name, data);
+                    reader.GetResourceData(name, out string typeName, out byte[] data);
+                    BamlDocument document = analyzer.Analyze(module, name, data);
 					document.DocumentName = name;
 					resInfo.Add(name, document);
 				}

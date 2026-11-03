@@ -59,15 +59,15 @@ namespace ConfuserNext.Core.Helpers {
 		/// <returns>The new TypeDef.</returns>
 		static TypeDef PopulateContext(TypeDef typeDef, InjectContext ctx) {
 			TypeDef ret;
-			IDnlibDef existing;
-			if (!ctx.DefMap.TryGetValue(typeDef, out existing)) {
-				ret = Clone(typeDef);
-				ctx.DefMap[typeDef] = ret;
-			}
-			else
-				ret = (TypeDef)existing;
+            if (!ctx.DefMap.TryGetValue(typeDef, out IDnlibDef existing))
+            {
+                ret = Clone(typeDef);
+                ctx.DefMap[typeDef] = ret;
+            }
+            else
+                ret = (TypeDef)existing;
 
-			foreach (TypeDef nestedType in typeDef.NestedTypes)
+            foreach (TypeDef nestedType in typeDef.NestedTypes)
 				ret.NestedTypes.Add(PopulateContext(nestedType, ctx));
 
 			foreach (MethodDef method in typeDef.Methods)

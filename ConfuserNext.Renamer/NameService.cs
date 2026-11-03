@@ -99,20 +99,18 @@ namespace ConfuserNext.Renamer {
 			var param = ProtectionParameters.GetParameters(context, def);
 			if (param == null)
 				ProtectionParameters.SetParameters(context, def, param = new ProtectionSettings());
-			Dictionary<string, string> nameParam;
-			if (!param.TryGetValue(analyze.Parent, out nameParam))
-				param[analyze.Parent] = nameParam = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-			nameParam[name] = value;
+            if (!param.TryGetValue(analyze.Parent, out Dictionary<string, string> nameParam))
+                param[analyze.Parent] = nameParam = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            nameParam[name] = value;
 		}
 
 		public string GetParam(IDnlibDef def, string name) {
 			var param = ProtectionParameters.GetParameters(context, def);
 			if (param == null)
 				return null;
-			Dictionary<string, string> nameParam;
-			if (!param.TryGetValue(analyze.Parent, out nameParam))
-				return null;
-			return nameParam.GetValueOrDefault(name);
+            if (!param.TryGetValue(analyze.Parent, out Dictionary<string, string> nameParam))
+                return null;
+            return nameParam.GetValueOrDefault(name);
 		}
 
 		public RenameMode GetRenameMode(object obj) {
@@ -185,12 +183,12 @@ namespace ConfuserNext.Renamer {
 		string ParseGenericName(string name, out int? count) {
 			if (name.LastIndexOf('`') != -1) {
 				int index = name.LastIndexOf('`');
-				int c;
-				if (int.TryParse(name.Substring(index + 1), out c)) {
-					count = c;
-					return name.Substring(0, index);
-				}
-			}
+                if (int.TryParse(name.Substring(index + 1), out int c))
+                {
+                    count = c;
+                    return name.Substring(0, index);
+                }
+            }
 			count = null;
 			return name;
 		}
@@ -204,10 +202,9 @@ namespace ConfuserNext.Renamer {
 
 		public string ObfuscateName(string name, RenameMode mode) {
 			string newName = null;
-			int? count;
-			name = ParseGenericName(name, out count);
+            name = ParseGenericName(name, out int? count);
 
-			if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
 				return string.Empty;
 
 			if (mode == RenameMode.Empty)

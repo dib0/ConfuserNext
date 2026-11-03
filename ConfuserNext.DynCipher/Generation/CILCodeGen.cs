@@ -21,13 +21,13 @@ namespace ConfuserNext.DynCipher.Generation {
 		}
 
 		protected virtual Local Var(Variable var) {
-			Local ret;
-			if (!localMap.TryGetValue(var.Name, out ret)) {
-				ret = new Local(Method.Module.CorLibTypes.UInt32);
-				ret.Name = var.Name;
-				localMap[var.Name] = ret;
-			}
-			return ret;
+            if (!localMap.TryGetValue(var.Name, out Local ret))
+            {
+                ret = new Local(Method.Module.CorLibTypes.UInt32);
+                ret.Name = var.Name;
+                localMap[var.Name] = ret;
+            }
+            return ret;
 		}
 
 		protected virtual void LoadVar(Variable var) {

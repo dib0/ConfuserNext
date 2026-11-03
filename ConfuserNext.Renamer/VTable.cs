@@ -167,15 +167,13 @@ namespace ConfuserNext.Renamer {
 					foreach (var entry in iface.ToList()) {
 						if (!entry.Value.MethodDef.DeclaringType.IsInterface)
 							continue;
-						// This is the step 1 of 12.2 algorithm -- find implementation for still empty slots.
-						// Note that it seems we should include newslot methods as well, despite what the standard said.
-						MethodDef impl;
-						VTableSlot implSlot;
-						if (virtualMethods.TryGetValue(entry.Key, out impl))
-							iface[entry.Key] = entry.Value.OverridedBy(impl);
-						else if (vTbl.SlotsMap.TryGetValue(entry.Key, out implSlot))
-							iface[entry.Key] = entry.Value.OverridedBy(implSlot.MethodDef);
-					}
+                        // This is the step 1 of 12.2 algorithm -- find implementation for still empty slots.
+                        // Note that it seems we should include newslot methods as well, despite what the standard said.
+                        if (virtualMethods.TryGetValue(entry.Key, out MethodDef impl))
+                            iface[entry.Key] = entry.Value.OverridedBy(impl);
+                        else if (vTbl.SlotsMap.TryGetValue(entry.Key, out VTableSlot implSlot))
+                            iface[entry.Key] = entry.Value.OverridedBy(implSlot.MethodDef);
+                    }
 				}
 			}
 
@@ -245,18 +243,18 @@ namespace ConfuserNext.Renamer {
 			// This is the step 2 of 12.2 algorithm -- use virtual newslot methods for explicit implementation.
 
 			Func<VTableSlot, VTableSlot> implLookup = slot => {
-				MethodDef impl;
-				if (virtualMethods.TryGetValue(slot.Signature, out impl) &&
-				    impl.IsNewSlot && !impl.DeclaringType.IsInterface) {
-					// Interface methods cannot implements base interface methods.
-					// The Overrides of interface slots should directly points to the root interface slot
-					var targetSlot = slot;
-					while (targetSlot.Overrides != null && !targetSlot.MethodDef.DeclaringType.IsInterface)
-						targetSlot = targetSlot.Overrides;
-					Debug.Assert(targetSlot.MethodDef.DeclaringType.IsInterface);
-					return targetSlot.OverridedBy(impl);
-				}
-				return slot;
+                if (virtualMethods.TryGetValue(slot.Signature, out MethodDef impl) &&
+                    impl.IsNewSlot && !impl.DeclaringType.IsInterface)
+                {
+                    // Interface methods cannot implements base interface methods.
+                    // The Overrides of interface slots should directly points to the root interface slot
+                    var targetSlot = slot;
+                    while (targetSlot.Overrides != null && !targetSlot.MethodDef.DeclaringType.IsInterface)
+                        targetSlot = targetSlot.Overrides;
+                    Debug.Assert(targetSlot.MethodDef.DeclaringType.IsInterface);
+                    return targetSlot.OverridedBy(impl);
+                }
+                return slot;
 			};
 
 			if (vTbl.InterfaceSlots.ContainsKey(iface)) {
@@ -328,10 +326,9 @@ namespace ConfuserNext.Renamer {
 		}
 
 		VTable GetOrConstruct(TypeDef type) {
-			VTable ret;
-			if (!storage.TryGetValue(type, out ret))
-				ret = storage[type] = VTable.ConstructVTable(type, this);
-			return ret;
+            if (!storage.TryGetValue(type, out VTable ret))
+                ret = storage[type] = VTable.ConstructVTable(type, this);
+            return ret;
 		}
 
 		public VTable GetVTable(ITypeDefOrRef type) {

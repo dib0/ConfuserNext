@@ -30,10 +30,9 @@ namespace ConfuserNext.Core {
 			if (key == null)
 				throw new ArgumentNullException("key");
 
-			ListDictionary objAnno;
-			if (!annotations.TryGetValue(obj, out objAnno))
-				return defValue;
-			if (!objAnno.Contains(key))
+            if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
+                return defValue;
+            if (!objAnno.Contains(key))
 				return defValue;
 
 			Type valueType = typeof(TValue);
@@ -59,10 +58,9 @@ namespace ConfuserNext.Core {
 			if (key == null)
 				throw new ArgumentNullException("key");
 
-			ListDictionary objAnno;
-			if (!annotations.TryGetValue(obj, out objAnno))
-				return defValueFactory(key);
-			if (!objAnno.Contains(key))
+            if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
+                return defValueFactory(key);
+            if (!objAnno.Contains(key))
 				return defValueFactory(key);
 
 			Type valueType = typeof(TValue);
@@ -88,10 +86,9 @@ namespace ConfuserNext.Core {
 			if (key == null)
 				throw new ArgumentNullException("key");
 
-			ListDictionary objAnno;
-			if (!annotations.TryGetValue(obj, out objAnno))
-				objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();
-			TValue ret;
+            if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
+                objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();
+            TValue ret;
 			if (objAnno.Contains(key)) {
 				Type valueType = typeof(TValue);
 				if (valueType.IsValueType)
@@ -118,10 +115,9 @@ namespace ConfuserNext.Core {
 			if (key == null)
 				throw new ArgumentNullException("key");
 
-			ListDictionary objAnno;
-			if (!annotations.TryGetValue(obj, out objAnno))
-				objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();
-			objAnno[key] = value;
+            if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
+                objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();
+            objAnno[key] = value;
 		}
 
 		/// <summary>

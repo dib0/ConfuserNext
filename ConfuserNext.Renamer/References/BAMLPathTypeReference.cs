@@ -33,9 +33,8 @@ namespace ConfuserNext.Renamer.References {
 				indexer.Type = name;
 			}
 			else {
-				string oldType, property;
-				attachedDP.ExtractAttachedDP(out oldType, out property);
-				attachedDP.Name = string.Format("({0}.{1})", name, property);
+                attachedDP.ExtractAttachedDP(out string oldType, out string property);
+                attachedDP.Name = string.Format("({0}.{1})", name, property);
 			}
 			return true;
 		}

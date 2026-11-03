@@ -168,10 +168,9 @@ namespace ConfuserNext.Core {
 							if (match.Success) {
 								var orderStr = match.Groups[1].Value;
 								var f = match.Groups[2].Value;
-								int o;
-								if (!int.TryParse(orderStr, out o))
-									throw new NotSupportedException(string.Format("Failed to parse feature '{0}' in {1} ", feature, item));
-								order = o;
+                                if (!int.TryParse(orderStr, out int o))
+                                    throw new NotSupportedException(string.Format("Failed to parse feature '{0}' in {1} ", feature, item));
+                                order = o;
 								feature = f;
 							}
 
@@ -263,12 +262,11 @@ namespace ConfuserNext.Core {
 
 		IEnumerable<ProtectionSettingsInfo> ReadInfos(IHasCustomAttribute item) {
 			foreach (var attr in ReadObfuscationAttributes(item)) {
-				ProtectionSettingsInfo info;
-				if (!string.IsNullOrEmpty(attr.FeatureName))
-					yield return AddRule(attr, null);
-				else if (ToInfo(attr, out info))
-					yield return info;
-			}
+                if (!string.IsNullOrEmpty(attr.FeatureName))
+                    yield return AddRule(attr, null);
+                else if (ToInfo(attr, out ProtectionSettingsInfo info))
+                    yield return info;
+            }
 		}
 
 		ConfuserContext context;
@@ -381,10 +379,9 @@ namespace ConfuserNext.Core {
 			// Add obfuscation attributes
 			foreach (var attr in ReadObfuscationAttributes(module.Assembly)) {
 				if (string.IsNullOrEmpty(attr.FeatureName)) {
-					ProtectionSettingsInfo info;
-					if (ToInfo(attr, out info))
-						layer.Add(info);
-				}
+                    if (ToInfo(attr, out ProtectionSettingsInfo info))
+                        layer.Add(info);
+                }
 				else if (attr.FeatureName.Equals("generate debug symbol", StringComparison.OrdinalIgnoreCase)) {
 					if (!isMain)
 						throw new ArgumentException("Only main module can set 'generate debug symbol'.");

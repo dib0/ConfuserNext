@@ -89,13 +89,11 @@ namespace ConfuserNext.Runtime {
 				if (peInfo == null)
 					return IntPtr.Zero;
 
-				IntPtr sectionAddr;
-				uint sectionSize;
-				if (!peInfo.FindSection(".data", out sectionAddr, out sectionSize))
-					return IntPtr.Zero;
+                if (!peInfo.FindSection(".data", out IntPtr sectionAddr, out uint sectionSize))
+                    return IntPtr.Zero;
 
-				// Try to find the Debugger instance location in the data section
-				var p = (byte*)sectionAddr;
+                // Try to find the Debugger instance location in the data section
+                var p = (byte*)sectionAddr;
 				byte* end = (byte*)sectionAddr + sectionSize;
 				for (; p + IntPtr.Size <= end; p += IntPtr.Size) {
 					IntPtr pDebugger = *(IntPtr*)p;
