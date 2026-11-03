@@ -33,11 +33,6 @@ Usage
 The project file is a ConfuserNext Project (*.crproj).
 The format of project file can be found in docs\ProjectFormat.md
 
-Bug Report
-----------
-See the [Issues Report](http://yck1509.github.io/ConfuserEx/issues/) section of website.
-
-
 License
 -------
 See LICENSE file for details.
