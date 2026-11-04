@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ConfuserNext.Core;
+using ConfuserNext.Core.Services;
 using dnlib.DotNet;
 using dnlib.DotNet.MD;
 using dnlib.DotNet.Writer;
@@ -47,13 +48,25 @@ namespace ConfuserNext.Protections.Compress {
 				ctx.Kind = context.CurrentModule.Kind;
 
 				if (!ctx.CompatMode) {
-					context.CurrentModule.Name = "koi";
+					RandomGenerator random = context.Registry.GetService<IRandomService>().GetRandomGenerator(Compressor._Id);
+					ctx.EmbeddedModuleName = GenerateModuleName(random);
+					context.CurrentModule.Name = ctx.EmbeddedModuleName;
 					context.CurrentModule.EntryPoint = null;
 					context.CurrentModule.Kind = ModuleKind.NetModule;
 				}
 
 				context.CurrentModuleWriterListener.OnWriterEvent += new ResourceRecorder(ctx, context.CurrentModule).OnWriterEvent;
 			}
+		}
+
+		const string NameChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+		static string GenerateModuleName(RandomGenerator random) {
+			int len = 5 + random.NextInt32(6); // 5-10 chars
+			var sb = new StringBuilder(len);
+			for (int i = 0; i < len; i++)
+				sb.Append(NameChars[random.NextInt32(NameChars.Length)]);
+			return sb.ToString();
 		}
 
 		class ResourceRecorder {

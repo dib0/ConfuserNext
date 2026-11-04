@@ -54,6 +54,9 @@ namespace ConfuserNext.Runtime {
 			Module n = a.ManifestModule;
 			GCHandle h = Decrypt(q, (uint)Mutation.KeyI1);
 			var b = (byte[])h.Target;
+			// "koi" is a placeholder: ConfuserNext.Protections.Compressor.InjectStub rewrites
+			// this literal (and the matching File-table/module name) to a random per-build
+			// name before the stub is written out.
 			Module m = a.LoadModule("koi", b);
 			Array.Clear(b, 0, b.Length);
 			h.Free();

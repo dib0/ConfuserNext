@@ -219,6 +219,14 @@ namespace ConfuserNext.Protections {
 			MethodDef entryPoint = defs.OfType<MethodDef>().Single(method => method.Name == "Main");
 			stubModule.EntryPoint = entryPoint;
 
+			// The runtime template loads the embedded module via a fixed "koi" literal;
+			// replace it with the per-build random name so the module/File-table name
+			// (set in ExtractPhase/KeyInjector) and the runtime lookup stay in sync.
+			foreach (Instruction instr in entryPoint.Body.Instructions) {
+				if (instr.OpCode == OpCodes.Ldstr && (string)instr.Operand == "koi")
+					instr.Operand = compCtx.EmbeddedModuleName;
+			}
+
 			if (compCtx.EntryPoint.HasAttribute("System.STAThreadAttribute")) {
 				var attrType = stubModule.CorLibTypes.GetTypeRef("System", "STAThreadAttribute");
 				var ctorSig = MethodSig.CreateInstance(stubModule.CorLibTypes.Void);
@@ -319,7 +327,7 @@ namespace ConfuserNext.Protections {
 					MDTable<RawFileRow> fileTbl = writer.Metadata.TablesHeap.FileTable;
 					uint fileRid = fileTbl.Add(new RawFileRow(
 						                           (uint)FileAttributes.ContainsMetadata,
-						                           writer.Metadata.StringsHeap.Add("koi"),
+						                           writer.Metadata.StringsHeap.Add(ctx.EmbeddedModuleName),
 						                           hashBlob));
 					uint impl = CodedToken.Implementation.Encode(new MDToken(Table.File, fileRid));
 

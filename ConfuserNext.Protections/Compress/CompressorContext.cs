@@ -16,6 +16,14 @@ namespace ConfuserNext.Protections.Compress {
 		public List<Tuple<uint, uint, string>> ManifestResources;
 		public int ModuleIndex;
 		public string ModuleName;
+
+		/// <summary>
+		///     Per-build randomized name used for the embedded original module and its
+		///     corresponding File table row (replaces the previously fixed "koi" literal,
+		///     which is a known static fingerprint used by third-party ConfuserEx unpackers
+		///     to locate the compressor stub).
+		/// </summary>
+		public string EmbeddedModuleName;
 		public byte[] OriginModule;
 		public ModuleDef OriginModuleDef;
 		public bool CompatMode;

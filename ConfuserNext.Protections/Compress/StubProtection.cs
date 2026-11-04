@@ -107,7 +107,7 @@ namespace ConfuserNext.Protections.Compress {
 						MDTable<RawFileRow> fileTbl = writer.Metadata.TablesHeap.FileTable;
 						uint fileRid = fileTbl.Add(new RawFileRow(
 							                           (uint)FileAttributes.ContainsMetadata,
-							                           writer.Metadata.StringsHeap.Add("koi"),
+							                           writer.Metadata.StringsHeap.Add(prot.ctx.EmbeddedModuleName),
 							                           hashBlob));
 					}
 				};
