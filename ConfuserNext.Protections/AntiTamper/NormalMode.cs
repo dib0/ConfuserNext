@@ -156,7 +156,12 @@ namespace ConfuserNext.Protections.AntiTamper {
 				}
 			}
 			if (moved)
-				writer.Sections.Add(peSection);
+				// Must use AddSection (not Sections.Add) - when the module has a .reloc section it
+				// has to remain the last entry in writer.Sections, and AddSection inserts new
+				// sections before it. A plain Sections.Add() here left .reloc in a non-last
+				// position whenever a .reloc section existed, which made ModuleWriter.WriteFile()
+				// throw "Reloc section must be the last section, use AddSection() to add a section".
+				writer.AddSection(peSection);
 
 			// move encrypted methods
 			var encryptedChunk = new MethodBodyChunks(writer.TheOptions.ShareMethodBodies);

@@ -45,6 +45,13 @@ namespace ConfuserNext.Protections.ReferenceProxy {
                 proxy.Body = new CilBody();
                 for (int i = 0; i < proxy.Parameters.Count; i++)
                     proxy.Body.Instructions.Add(Instruction.Create(OpCodes.Ldarg, proxy.Parameters[i]));
+                // Pad with a random number of semantically-inert nops. Several third-party
+                // ConfuserEx unpackers (e.g. NoFuserEx's ProxyDeobfuscator) identify these proxy
+                // stubs by an exact "body.Count == paramCount + 2" check; varying the length per
+                // proxy defeats that fixed-shape match without changing behavior.
+                int junk = 1 + ctx.Random.NextInt32(4);
+                for (int i = 0; i < junk; i++)
+                    proxy.Body.Instructions.Add(Instruction.Create(OpCodes.Nop));
                 proxy.Body.Instructions.Add(Instruction.Create(invoke.OpCode, target));
                 proxy.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
 

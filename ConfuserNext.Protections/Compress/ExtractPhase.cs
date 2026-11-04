@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using ConfuserNext.Core;
 using ConfuserNext.Core.Services;
@@ -82,11 +81,21 @@ namespace ConfuserNext.Protections.Compress {
 				if (e.WriterEvent == ModuleWriterEvent.MDEndAddResources) {
 					var writer = (ModuleWriterBase)sender;
 					ctx.ManifestResources = new List<Tuple<uint, uint, string>>();
-					Dictionary<uint, byte[]> stringDict = writer.Metadata.StringsHeap.GetAllRawData().ToDictionary(pair => pair.Key, pair => pair.Value);
 					var manifestResourceTable = writer.Metadata.TablesHeap.ManifestResourceTable;
+					// Read the resource name directly from the module's own Resources list rather
+					// than re-decoding it from the #Strings heap: at this point (MDEndAddResources,
+					// which fires mid-write) a freshly-added string's RawManifestResourceRow.Name
+					// may still be dnlib's internal "offset id" (StringsHeap.Add's return value,
+					// flagged with bit 31) rather than its final on-disk heap offset - that offset
+					// is only assigned once the heap is optimized and frozen later in the write.
+					// Looking up such an id directly in the heap's raw-data dictionary throws
+					// KeyNotFoundException. dnlib writes ManifestResource rows in the exact order of
+					// targetModule.Resources (row rid == Resources[rid - 1]), so indexing that list
+					// gives the real name without touching heap offsets at all.
 					for (uint rid = 1; rid <= (uint)manifestResourceTable.Rows; rid++) {
 						RawManifestResourceRow resource = manifestResourceTable[rid];
-						ctx.ManifestResources.Add(Tuple.Create(resource.Offset, resource.Flags, Encoding.UTF8.GetString(stringDict[resource.Name])));
+						string name = targetModule.Resources[(int)(rid - 1)].Name;
+						ctx.ManifestResources.Add(Tuple.Create(resource.Offset, resource.Flags, name));
 					}
 					ctx.EntryPointToken = writer.Metadata.GetToken(ctx.EntryPoint).Raw;
 				}

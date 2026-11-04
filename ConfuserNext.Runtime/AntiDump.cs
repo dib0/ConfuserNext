@@ -11,6 +11,14 @@ namespace ConfuserNext.Runtime {
 			uint old;
 			Module module = typeof(AntiDump).Module;
 			var bas = (byte*)Marshal.GetHINSTANCE(module);
+
+			// Decoy call: harmlessly re-asserts the existing protection on the first byte of the
+			// already-mapped module image. Some third-party ConfuserEx unpackers (e.g. NoFuserEx)
+			// identify this method by containing exactly 14 VirtualProtect(Byte*,Int32,UInt32,
+			// UInt32&) calls; adding one more, inert one defeats that exact-count match.
+			uint junkOld;
+			VirtualProtect(bas, 1, 0x40, out junkOld);
+
 			byte* ptr = bas + 0x3c;
 			byte* ptr2;
 			ptr = ptr2 = bas + *(uint*)ptr;

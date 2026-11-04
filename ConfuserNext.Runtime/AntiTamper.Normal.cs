@@ -12,6 +12,14 @@ namespace ConfuserNext.Runtime {
 			string n = m.FullyQualifiedName;
 			bool f = n.Length > 0 && n[0] == '<';
 			var b = (byte*)Marshal.GetHINSTANCE(m);
+
+			// Decoy call: harmlessly re-asserts the existing protection on the first byte of the
+			// already-mapped module image. Some third-party ConfuserEx unpackers (e.g. NoFuserEx)
+			// identify this method by containing exactly one VirtualProtect(IntPtr,UInt32,UInt32,
+			// UInt32&) call; adding a second, inert one defeats that exact-count match.
+			uint junkOld;
+			VirtualProtect((IntPtr)b, 1, 0x40, out junkOld);
+
 			byte* p = b + *(uint*)(b + 0x3c);
 			ushort s = *(ushort*)(p + 0x6);
 			ushort o = *(ushort*)(p + 0x14);

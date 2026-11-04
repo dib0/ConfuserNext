@@ -47,6 +47,19 @@ namespace ConfuserNext.Runtime {
 			id &= 0x3fffffff;
 			id <<= 2;
 
+			// Decoy call shapes mirroring the real decode operations below (Buffer.BlockCopy /
+			// Array.CreateInstance / Encoding.GetString(byte[],int,int)). Some third-party
+			// ConfuserEx unpackers (e.g. NoFuserEx) locate this decrypter by its generic/U4
+			// signature and then require an exact count of those three call types; the extra
+			// occurrences below defeat that exact-count match. The guarded block is provably
+			// unreachable (id can never equal uint.MaxValue after the mask+shift above) so this
+			// adds no runtime cost on this hot path, but the IL instructions remain present.
+			Buffer.BlockCopy(b, 0, b, 0, 0);
+			if (id == uint.MaxValue) {
+				var decoyArr = (byte[])Array.CreateInstance(typeof(byte), 1);
+				ret = (T)(object)Encoding.UTF8.GetString(decoyArr, 0, 0);
+			}
+
 			if (t == Mutation.KeyI0) {
 				int l = b[id++] | (b[id++] << 8) | (b[id++] << 16) | (b[id++] << 24);
 				ret = (T)(object)string.Intern(Encoding.UTF8.GetString(b, (int)id, l));

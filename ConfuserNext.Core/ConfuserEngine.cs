@@ -543,6 +543,20 @@ namespace ConfuserNext.Core {
 				if (major != null)
 					majorVersions.Add(major.Value);
 			}
+
+			// Runtime helper types (ConfuserNext.Runtime.dll, see RuntimeService.GetRuntimeType)
+			// are always loaded from - and built against - whichever framework is currently
+			// hosting this process, regardless of which framework the protected module(s)
+			// target. Once such a helper is injected into a module, that module's own
+			// AssemblyRefs can need the *host's* corlib version to resolve, not just whatever its
+			// own TargetFrameworkAttribute declares. This matters most when a module that already
+			// has injected helpers is loaded fresh for a brand new ConfuserEngine run (e.g. the
+			// packer re-protecting its own stub), where nothing but that attribute is otherwise
+			// available to infer the extra requirement from.
+			System.Version hostVersion = typeof(object).Assembly.GetName().Version;
+			if (hostVersion != null)
+				majorVersions.Add(hostVersion.Major);
+
 			if (majorVersions.Count == 0)
 				yield break;
 

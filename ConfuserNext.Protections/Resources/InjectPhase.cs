@@ -141,7 +141,53 @@ namespace ConfuserNext.Protections.Resources {
 					typeof(RuntimeHelpers).GetMethod("InitializeArray"))));
 				return repl.ToArray();
 			});
+			InjectDecoyInitializeArray(moduleCtx);
 			moduleCtx.Context.Registry.GetService<IConstantService>().ExcludeMethod(moduleCtx.Context, moduleCtx.InitMethod);
+		}
+
+		/// <summary>
+		///     Appends a second, harmless RuntimeHelpers.InitializeArray call (on a throwaway
+		///     field holding junk bytes, result discarded) right before the method's return.
+		///     Some third-party ConfuserEx unpackers (e.g. NoFuserEx) locate this decrypter by
+		///     requiring exactly one InitializeArray call in the method; this defeats that
+		///     exact-count match. The field/data are created directly in the target module
+		///     (same as the real data field above) rather than embedded in the
+		///     ConfuserNext.Runtime template, so there is no cross-assembly reference to resolve.
+		/// </summary>
+		void InjectDecoyInitializeArray(REContext moduleCtx) {
+			ModuleDef module = moduleCtx.Module;
+			byte[] data = { 0x4b, 0x69, 0x2e, 0x4e, 0x65, 0x78, 0x74, 0x21 };
+
+			var dataType = new TypeDefUser("", moduleCtx.Name.RandomName(), module.CorLibTypes.GetTypeRef("System", "ValueType"));
+			dataType.Layout = TypeAttributes.ExplicitLayout;
+			dataType.Visibility = TypeAttributes.NestedPrivate;
+			dataType.IsSealed = true;
+			dataType.ClassLayout = new ClassLayoutUser(1, (uint)data.Length);
+			module.GlobalType.NestedTypes.Add(dataType);
+			moduleCtx.Name.MarkHelper(dataType, moduleCtx.Marker, (Protection)Parent);
+
+			var dataField = new FieldDefUser(moduleCtx.Name.RandomName(), new FieldSig(dataType.ToTypeSig())) {
+				IsStatic = true,
+				HasFieldRVA = true,
+				InitialValue = data,
+				Access = FieldAttributes.CompilerControlled
+			};
+			module.GlobalType.Fields.Add(dataField);
+			moduleCtx.Name.MarkHelper(dataField, moduleCtx.Marker, (Protection)Parent);
+
+			IList<Instruction> instrs = moduleCtx.InitMethod.Body.Instructions;
+			int retIndex = instrs.Count - 1;
+			Debug.Assert(instrs[retIndex].OpCode == OpCodes.Ret);
+			var decoy = new[] {
+				Instruction.Create(OpCodes.Ldc_I4, data.Length),
+				Instruction.Create(OpCodes.Newarr, module.CorLibTypes.Byte.ToTypeDefOrRef()),
+				Instruction.Create(OpCodes.Dup),
+				Instruction.Create(OpCodes.Ldtoken, dataField),
+				Instruction.Create(OpCodes.Call, module.Import(typeof(RuntimeHelpers).GetMethod("InitializeArray"))),
+				Instruction.Create(OpCodes.Pop)
+			};
+			for (int i = 0; i < decoy.Length; i++)
+				instrs.Insert(retIndex + i, decoy[i]);
 		}
 	}
 }

@@ -5,16 +5,30 @@ using System.Threading;
 
 namespace ConfuserNext.Runtime {
 	internal static class AntiDebugWin32 {
-		static string Decode(params int[] codes) {
-			var chars = new char[codes.Length];
-			for (int i = 0; i < codes.Length; i++)
-				chars[i] = (char)codes[i];
-			return new string(chars);
+		// See the equivalent comment in AntiDebug.Safe.cs: built one char at a time (individual
+		// stelem assignments) rather than a C# array initializer, which would compile to a
+		// reference into this assembly's own <PrivateImplementationDetails> type that does not
+		// resolve once this method is cloned into a protected module.
+		static string BuildCorProfilerName() {
+			var c = new char[12];
+			c[0] = 'C'; c[1] = 'O'; c[2] = 'R'; c[3] = '_'; c[4] = 'P';
+			c[5] = 'R'; c[6] = 'O'; c[7] = 'F'; c[8] = 'I'; c[9] = 'L';
+			c[10] = 'E'; c[11] = 'R';
+			return new string(c);
+		}
+
+		static string BuildCorEnableProfilingName() {
+			var c = new char[20];
+			c[0] = 'C'; c[1] = 'O'; c[2] = 'R'; c[3] = '_'; c[4] = 'E';
+			c[5] = 'N'; c[6] = 'A'; c[7] = 'B'; c[8] = 'L'; c[9] = 'E';
+			c[10] = '_'; c[11] = 'P'; c[12] = 'R'; c[13] = 'O'; c[14] = 'F';
+			c[15] = 'I'; c[16] = 'L'; c[17] = 'I'; c[18] = 'N'; c[19] = 'G';
+			return new string(c);
 		}
 
 		static void Initialize() {
-			if (Environment.GetEnvironmentVariable(Decode('C', 'O', 'R', '_', 'P', 'R', 'O', 'F', 'I', 'L', 'E', 'R')) != null ||
-			    Environment.GetEnvironmentVariable(Decode('C', 'O', 'R', '_', 'E', 'N', 'A', 'B', 'L', 'E', '_', 'P', 'R', 'O', 'F', 'I', 'L', 'I', 'N', 'G')) != null)
+			if (Environment.GetEnvironmentVariable(BuildCorProfilerName()) != null ||
+			    Environment.GetEnvironmentVariable(BuildCorEnableProfilingName()) != null)
 				Environment.FailFast(null);
 
 			var thread = new Thread(Worker);
