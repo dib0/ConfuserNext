@@ -61,10 +61,19 @@ namespace ConfuserNext.Tests.Support {
 			OutputKind outputKind = OutputKind.ConsoleApplication) {
 			assemblyName ??= Path.GetFileNameWithoutExtension(outputPath);
 
-			SyntaxTree tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Latest));
+			var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
+			SyntaxTree tree = CSharpSyntaxTree.ParseText(source, parseOptions);
+			// Real `dotnet build` output always carries this attribute, and ConfuserNext.Core's
+			// CoreCLR-vs-.NET-Framework detection (DnlibUtils.TargetsCoreCLR, used by e.g. the
+			// Compressor packer to pick a working technique) reads it - without this, these
+			// in-memory-compiled fixtures would silently look like a framework-less/unidentifiable
+			// target to any code that inspects it, unlike a real build's output.
+			SyntaxTree tfmTree = CSharpSyntaxTree.ParseText(
+				$"[assembly: System.Runtime.Versioning.TargetFramework(\".NETCoreApp,Version=v{Environment.Version.Major}.0\")]",
+				parseOptions);
 			CSharpCompilation compilation = CSharpCompilation.Create(
 				assemblyName,
-				new[] { tree },
+				new[] { tree, tfmTree },
 				GetReferences(),
 				new CSharpCompilationOptions(outputKind, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
 

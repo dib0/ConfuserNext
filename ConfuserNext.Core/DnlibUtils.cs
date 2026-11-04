@@ -11,6 +11,34 @@ namespace ConfuserNext.Core {
 	/// </summary>
 	public static class DnlibUtils {
 		/// <summary>
+		///     Determines whether <paramref name="module" />'s assembly declares a .NET (Core) /
+		///     .NET 5+ target framework (i.e. it will run on CoreCLR), as opposed to .NET Framework.
+		/// </summary>
+		/// <remarks>
+		///     CoreCLR has never implemented <see cref="System.Reflection.Assembly.LoadModule" />
+		///     (it throws <see cref="NotImplementedException" /> unconditionally on every .NET
+		///     Core/5+ version) - this is used to detect when a packer technique relying on that API
+		///     cannot be used and a CoreCLR-compatible alternative must be used instead.
+		/// </remarks>
+		/// <param name="module">The module.</param>
+		/// <returns><c>true</c> if the module targets .NET (Core); otherwise, <c>false</c>.</returns>
+		public static bool TargetsCoreCLR(this ModuleDef module) {
+			AssemblyDef asm = module?.Assembly;
+			if (asm == null)
+				return false;
+
+			foreach (CustomAttribute ca in asm.CustomAttributes) {
+				if (ca.TypeFullName != "System.Runtime.Versioning.TargetFrameworkAttribute" || ca.ConstructorArguments.Count == 0)
+					continue;
+
+				string tfm = ca.ConstructorArguments[0].Value?.ToString();
+				if (tfm != null && tfm.StartsWith(".NETCoreApp,", StringComparison.Ordinal))
+					return true;
+			}
+			return false;
+		}
+
+		/// <summary>
 		///     Finds all definitions of interest in a module.
 		/// </summary>
 		/// <param name="module">The module.</param>

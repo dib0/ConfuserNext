@@ -161,26 +161,41 @@ namespace ConfuserNext.Tests.Integration {
 			}
 		}
 
-		[Fact(Skip =
-			"Environment-specific: the compressor's non-compat build re-protects its own stub by " +
-			"writing a freshly-compiled, valid PE module to a temp directory and immediately " +
-			"reopening it (Packer.ProtectStub). On this machine, under the test-host process " +
-			"specifically (not under a plain `dotnet run`, and not for the same file content " +
-			"written by a plain console app), every read-open of that file - even a bare " +
-			"FileAccess.Read with no memory-mapping - fails with UnauthorizedAccessException for " +
-			"well over ten seconds, consistent with endpoint-security software holding newly " +
-			"created executable-shaped files written by test-runner processes. CompatMode (below) " +
-			"takes the same ProtectStub path and passes, so this isn't a ConfuserNext logic bug; " +
-			"re-enable if this ever reproduces outside this specific environment.")]
-		public void CompressorPacker_RunsWithoutError() {
-			// The compressor's multi-module stub technique only targets .NET Framework at runtime
-			// (see session notes: Assembly.LoadModule is unimplemented on CoreCLR), but the build
-			// pipeline itself - which is what this test exercises - targets any TFM.
+		[Fact]
+		public void CompressorPacker_OnCoreClrTarget_AutoForcesCompatModeAndRuns() {
+			// Without an explicit "compat" setting, ExtractPhase must detect that the target runs on
+			// CoreCLR (via DnlibUtils.TargetsCoreCLR) and force compat mode itself, since the
+			// non-compat technique's Assembly.LoadModule never works there (see session notes). This
+			// is the actual fix for the open "packer doesn't work on modern .NET" issue: verify the
+			// packed output runs, not just that it builds.
 			var result = ObfuscationHarness.Protect(
-				new[] { new ProtectionSpec("constants") },
+				Array.Empty<ProtectionSpec>(),
+				source: SampleAssemblyFactory.DefaultProgramSource.Replace(
+					"Console.WriteLine(sum);", "Console.WriteLine(sum); Console.WriteLine(\"AUTO_COMPAT_PACKER_OK\");"),
 				packerId: "compressor");
 			try {
-				Assert.True(result.OutputModuleBytes.Length > 0);
+				Assert.Contains("Forcing compat mode", result.Logger.Dump());
+
+				string runtimeConfigPath = System.IO.Path.ChangeExtension(result.OutputModulePath, "runtimeconfig.json");
+				int hostMajor = Environment.Version.Major;
+				System.IO.File.WriteAllText(runtimeConfigPath, $@"{{
+  ""runtimeOptions"": {{
+    ""tfm"": ""net{hostMajor}.0"",
+    ""framework"": {{ ""name"": ""Microsoft.NETCore.App"", ""version"": ""{hostMajor}.0.0"" }},
+    ""rollForward"": ""LatestMinor""
+  }}
+}}");
+				var psi = new System.Diagnostics.ProcessStartInfo("dotnet", $"\"{result.OutputModulePath}\"") {
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false
+				};
+				using var process = System.Diagnostics.Process.Start(psi);
+				string stdout = process.StandardOutput.ReadToEnd();
+				string stderr = process.StandardError.ReadToEnd();
+				Assert.True(process.WaitForExit(30000), "packed app did not exit within 30s");
+				Assert.True(process.ExitCode == 0, $"packed app exited {process.ExitCode}.\nstdout:\n{stdout}\nstderr:\n{stderr}");
+				Assert.Contains("AUTO_COMPAT_PACKER_OK", stdout);
 			}
 			finally {
 				ObfuscationHarness.Cleanup(result);

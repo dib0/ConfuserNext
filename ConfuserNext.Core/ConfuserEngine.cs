@@ -424,7 +424,7 @@ namespace ConfuserNext.Core {
 		static void WriteModule(ConfuserContext context) {
 			context.Logger.InfoFormat("Writing module '{0}'...", context.CurrentModule.Name);
 
-			MemoryStream pdb = null, output = new MemoryStream();
+			MemoryStream pdb = null, output = new();
 
 			if (context.CurrentModule.PdbState != null) {
 				pdb = new MemoryStream();

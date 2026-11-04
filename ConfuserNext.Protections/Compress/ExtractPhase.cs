@@ -35,10 +35,29 @@ namespace ConfuserNext.Protections.Compress {
 			}
 
 			if (isExe) {
+				bool compatMode = parameters.GetParameter(context, null, "compat", false);
+
+				// The non-compat technique embeds the protected module as a second, manifest-less
+				// module in a multi-module assembly, loaded at startup via Assembly.LoadModule.
+				// CoreCLR (every .NET (Core) release, 1.0 through 10+) never implemented multi-module
+				// assemblies: LoadModule throws NotImplementedException unconditionally there, so
+				// that technique can only ever work against a .NET Framework target. Compat mode's
+				// Assembly.Load-based technique has no such limitation, so it is forced on here
+				// regardless of the requested setting - there is no working non-compat option for a
+				// CoreCLR target, so silently producing (non-functional) non-compat output would be
+				// worse than ignoring the request.
+				if (!compatMode && context.CurrentModule.TargetsCoreCLR()) {
+					context.Logger.Warn(
+						"Compressor: 'compat' was not requested, but the target module runs on " +
+						"CoreCLR (.NET (Core) 1.0+), which never implemented Assembly.LoadModule - " +
+						"the non-compat packer technique cannot work there. Forcing compat mode.");
+					compatMode = true;
+				}
+
 				var ctx = new CompressorContext {
 					ModuleIndex = context.CurrentModuleIndex,
 					Assembly = context.CurrentModule.Assembly,
-					CompatMode = parameters.GetParameter(context, null, "compat", false)
+					CompatMode = compatMode
 				};
 				context.Annotations.Set(context, Compressor.ContextKey, ctx);
 
