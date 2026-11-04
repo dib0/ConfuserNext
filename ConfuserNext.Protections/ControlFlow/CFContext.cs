@@ -26,6 +26,7 @@ namespace ConfuserNext.Protections.ControlFlow {
 
 		public double Intensity;
 		public bool JunkCode;
+		public bool DecoyEH;
 		public MethodDef Method;
 		public PredicateType Predicate;
 		public RandomGenerator Random;

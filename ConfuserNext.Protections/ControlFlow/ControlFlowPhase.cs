@@ -35,6 +35,7 @@ namespace ConfuserNext.Protections.ControlFlow {
 			ret.Depth = parameters.GetParameter(context, method, "depth", 4);
 
 			ret.JunkCode = parameters.GetParameter(context, method, "junk", false) && !disableOpti;
+			ret.DecoyEH = parameters.GetParameter(context, method, "decoyEH", true);
 
 			ret.Protection = (ControlFlowProtection)Parent;
 			ret.Random = random;
@@ -86,7 +87,45 @@ namespace ConfuserNext.Protections.ControlFlow {
 			return Jump;
 		}
 
+		/// <summary>
+		///     Prepends a self-contained try/catch(Exception) around a couple of junk instructions,
+		///     entirely new code that runs before (and falls through unconditionally into) the
+		///     method's real first instruction. It never encloses any of the method's own logic, so
+		///     it is always safe to add regardless of what the method actually does; its only purpose
+		///     is to clutter decompiler output with exception-handling noise that has no bearing on
+		///     the method's real behaviour, making the real control flow harder to pick out at a
+		///     glance (ILSpy/dnSpy render every try/catch region whether or not it is ever entered).
+		/// </summary>
+		static void AddDecoyExceptionHandler(CilBody body, CFContext ctx) {
+			if (body.Instructions.Count == 0)
+				return;
+
+			Instruction originalFirst = body.Instructions[0];
+			TypeRef exceptionType = ctx.Method.Module.CorLibTypes.GetTypeRef("System", "Exception");
+
+			Instruction tryStart = Instruction.CreateLdcI4(ctx.Random.NextInt32());
+			Instruction pop = Instruction.Create(OpCodes.Pop);
+			Instruction leaveTry = Instruction.Create(OpCodes.Leave, originalFirst);
+			Instruction catchStart = Instruction.Create(OpCodes.Pop); // discards the caught exception object
+			Instruction leaveHandler = Instruction.Create(OpCodes.Leave, originalFirst);
+
+			var prefix = new[] { tryStart, pop, leaveTry, catchStart, leaveHandler };
+			for (int i = prefix.Length - 1; i >= 0; i--)
+				body.Instructions.Insert(0, prefix[i]);
+
+			body.ExceptionHandlers.Insert(0, new ExceptionHandler(ExceptionHandlerType.Catch) {
+				TryStart = tryStart,
+				TryEnd = catchStart,
+				HandlerStart = catchStart,
+				HandlerEnd = originalFirst,
+				CatchType = exceptionType
+			});
+		}
+
 		void ProcessMethod(CilBody body, CFContext ctx) {
+			if (ctx.DecoyEH && ctx.Intensity > ctx.Random.NextDouble())
+				AddDecoyExceptionHandler(body, ctx);
+
             if (!MaxStackCalculator.GetMaxStack(body.Instructions, body.ExceptionHandlers, out uint maxStack))
             {
                 ctx.Context.Logger.Error("Failed to calcuate maxstack.");

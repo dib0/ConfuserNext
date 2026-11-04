@@ -438,6 +438,18 @@ namespace ConfuserNext.Core.Project {
 		public bool Debug { get; set; }
 
 		/// <summary>
+		///     Gets or sets a value indicating whether a <c>ConfusedByAttribute</c> watermark
+		///     (naming the obfuscator and version) is embedded in the protected assembly.
+		/// </summary>
+		/// <value><c>true</c> if the watermark is embedded; otherwise, <c>false</c>.</value>
+		/// <remarks>
+		///     Defaults to <c>false</c>: the watermark is a static, renaming-exempt fingerprint
+		///     that tools built to detect ConfuserEx-family output can key off, so it is opt-in
+		///     rather than always embedded.
+		/// </remarks>
+		public bool Watermark { get; set; }
+
+		/// <summary>
 		///     Gets or sets the output directory.
 		/// </summary>
 		/// <value>The output directory.</value>
@@ -503,6 +515,12 @@ namespace ConfuserNext.Core.Project {
 				elem.Attributes.Append(debugAttr);
 			}
 
+			if (Watermark) {
+				XmlAttribute watermarkAttr = xmlDoc.CreateAttribute("watermark");
+				watermarkAttr.Value = Watermark.ToString().ToLower();
+				elem.Attributes.Append(watermarkAttr);
+			}
+
 			foreach (Rule i in Rules)
 				elem.AppendChild(i.Save(xmlDoc));
 
@@ -561,6 +579,11 @@ namespace ConfuserNext.Core.Project {
 			else
 				Debug = false;
 
+			if (docElem.Attributes["watermark"] != null)
+				Watermark = bool.Parse(docElem.Attributes["watermark"].Value);
+			else
+				Watermark = false;
+
 			Packer = null;
 			Clear();
 			ProbePaths.Clear();
@@ -598,6 +621,7 @@ namespace ConfuserNext.Core.Project {
 			var ret = new ConfuserProject();
 			ret.Seed = Seed;
 			ret.Debug = Debug;
+			ret.Watermark = Watermark;
 			ret.OutputDirectory = OutputDirectory;
 			ret.BaseDirectory = BaseDirectory;
 			ret.Packer = Packer == null ? null : Packer.Clone();

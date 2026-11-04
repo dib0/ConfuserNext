@@ -161,6 +161,50 @@ namespace ConfuserNext.Tests.Integration {
 			}
 		}
 
+		[Theory]
+		[InlineData("switch")]
+		[InlineData("jump")]
+		public void ControlFlow_DecoyExceptionHandler_DoesNotChangeBehaviorAtRuntime(string cfType) {
+			// AddDecoyExceptionHandler (ControlFlowPhase) prepends a brand-new, self-contained
+			// try/catch around junk instructions ahead of every method's real first instruction, to
+			// clutter decompiler output. It is enabled by default (decoyEH=true). The only way this
+			// purely-additive change could go wrong is if it corrupted exception-handler bookkeeping,
+			// stack-depth calculations, or control flow for methods that have real logic (loops,
+			// conditionals, calls) following it - a metadata-load-only test cannot catch that; only
+			// actually running the protected assembly and checking its real output can.
+			var result = ObfuscationHarness.Protect(
+				new[] { new ProtectionSpec("ctrl flow", ("type", cfType), ("intensity", "100")) },
+				source: SampleAssemblyFactory.DefaultProgramSource.Replace(
+					"Console.WriteLine(sum);", "Console.WriteLine(sum); Console.WriteLine(\"DECOY_EH_OK\");"));
+			try {
+				string runtimeConfigPath = System.IO.Path.ChangeExtension(result.OutputModulePath, "runtimeconfig.json");
+				int hostMajor = Environment.Version.Major;
+				System.IO.File.WriteAllText(runtimeConfigPath, $@"{{
+  ""runtimeOptions"": {{
+    ""tfm"": ""net{hostMajor}.0"",
+    ""framework"": {{ ""name"": ""Microsoft.NETCore.App"", ""version"": ""{hostMajor}.0.0"" }},
+    ""rollForward"": ""LatestMinor""
+  }}
+}}");
+				var psi = new System.Diagnostics.ProcessStartInfo("dotnet", $"\"{result.OutputModulePath}\"") {
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false
+				};
+				using var process = System.Diagnostics.Process.Start(psi);
+				string stdout = process.StandardOutput.ReadToEnd();
+				string stderr = process.StandardError.ReadToEnd();
+				Assert.True(process.WaitForExit(30000), "protected app did not exit within 30s");
+				Assert.True(process.ExitCode == 0, $"protected app exited {process.ExitCode}.\nstdout:\n{stdout}\nstderr:\n{stderr}");
+				Assert.Contains("Hello, World!", stdout);
+				Assert.Contains("-31", stdout); // the loop's real, unchanged computed result
+				Assert.Contains("DECOY_EH_OK", stdout);
+			}
+			finally {
+				ObfuscationHarness.Cleanup(result);
+			}
+		}
+
 		[Fact]
 		public void CompressorPacker_OnCoreClrTarget_AutoForcesCompatModeAndRuns() {
 			// Without an explicit "compat" setting, ExtractPhase must detect that the target runs on
