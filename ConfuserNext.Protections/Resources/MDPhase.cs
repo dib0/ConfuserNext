@@ -15,8 +15,9 @@ namespace ConfuserNext.Protections.Resources {
 	internal class MDPhase {
 		readonly REContext ctx;
 		ByteArrayChunk encryptedResource;
+        internal static readonly int[] keyIds = new[] { 0, 1 };
 
-		public MDPhase(REContext ctx) {
+        public MDPhase(REContext ctx) {
 			this.ctx = ctx;
 		}
 
@@ -109,7 +110,7 @@ namespace ConfuserNext.Protections.Resources {
 
 				// inject key values
 				MutationHelper.InjectKeys(ctx.InitMethod,
-				                          new[] { 0, 1 },
+				                          keyIds,
 				                          new[] { (int)(size / 4), (int)(keySeed) });
 			}
 			else if (e.WriterEvent == ModuleWriterEvent.EndCalculateRvasAndFileOffsets) {

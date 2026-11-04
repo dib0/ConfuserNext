@@ -17,8 +17,16 @@ namespace ConfuserNext.Renamer {
 
 		public ReversibleRenamer(string password) {
 			cipher = Aes.Create();
+			// The instance constructor used below is obsolete (SYSLIB0060) in favor of the static
+			// Pbkdf2(...) method - but that method does not exist on net48, only on .NET 6+, hence
+			// the split to stay warning-free on every TFM this project targets.
+#if NET6_0_OR_GREATER
+			key = Rfc2898DeriveBytes.Pbkdf2(password, KdfSalt, KdfIterations, HashAlgorithmName.SHA256, 32);
+#else
 			using (var kdf = new Rfc2898DeriveBytes(password, KdfSalt, KdfIterations, HashAlgorithmName.SHA256))
-				cipher.Key = key = kdf.GetBytes(32);
+				key = kdf.GetBytes(32);
+#endif
+			cipher.Key = key;
 		}
 
 		static string Base64Encode(byte[] buf) {
@@ -37,7 +45,7 @@ namespace ConfuserNext.Renamer {
 			return iv;
 		}
 
-		byte GetIVId(string str) {
+        static byte GetIVId(string str) {
 			byte x = (byte)str[0];
 			for (int i = 1; i < str.Length; i++)
 				x = (byte)(x * 3 + (byte)str[i]);
@@ -45,7 +53,7 @@ namespace ConfuserNext.Renamer {
 		}
 
 		public string Encrypt(string name) {
-			byte ivId = GetIVId(name);
+			byte ivId = ReversibleRenamer.GetIVId(name);
 			cipher.IV = GetIV(ivId);
 			var buf = Encoding.UTF8.GetBytes(name);
 

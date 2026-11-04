@@ -43,10 +43,10 @@ namespace ConfuserNext.Core.Project {
 		///     The pattern is invalid.
 		/// </exception>
 		public PatternExpression Parse(string pattern) {
-			if (pattern == null)
-				throw new ArgumentNullException("pattern");
+            if (pattern == null)
+            	throw new ArgumentNullException(nameof(pattern));
 
-			try {
+            try {
 				tokenizer.Initialize(pattern);
 				lookAhead = tokenizer.NextToken();
 				PatternExpression ret = ParseExpression(true);
@@ -73,33 +73,33 @@ namespace ConfuserNext.Core.Project {
 			return ops.ContainsKey(token.Value);
 		}
 
-		Exception UnexpectedEnd() {
+        static Exception UnexpectedEnd() {
 			throw new InvalidPatternException("Unexpected end of pattern.");
 		}
 
-		Exception MismatchParens(int position) {
+        static Exception MismatchParens(int position) {
 			throw new InvalidPatternException(string.Format("Mismatched parentheses at position {0}.", position));
 		}
 
-		Exception UnknownToken(PatternToken token) {
+        static Exception UnknownToken(PatternToken token) {
 			throw new InvalidPatternException(string.Format("Unknown token '{0}' at position {1}.", token.Value, token.Position));
 		}
 
-		Exception UnexpectedToken(PatternToken token) {
+        static Exception UnexpectedToken(PatternToken token) {
 			throw new InvalidPatternException(string.Format("Unexpected token '{0}' at position {1}.", token.Value, token.Position));
 		}
 
-		Exception UnexpectedToken(PatternToken token, char expect) {
+        static Exception UnexpectedToken(PatternToken token, char expect) {
 			throw new InvalidPatternException(string.Format("Unexpected token '{0}' at position {1}. Expected '{2}'.", token.Value, token.Position, expect));
 		}
 
-		Exception BadArgCount(PatternToken token, int expected) {
+        static Exception BadArgCount(PatternToken token, int expected) {
 			throw new InvalidPatternException(string.Format("Invalid argument count for '{0}' at position {1}. Expected {2}", token.Value, token.Position, expected));
 		}
 
 		PatternToken ReadToken() {
 			if (lookAhead == null)
-				throw UnexpectedEnd();
+				throw PatternParser.UnexpectedEnd();
 			PatternToken ret = lookAhead.Value;
 			lookAhead = tokenizer.NextToken();
 			return ret;
@@ -120,7 +120,7 @@ namespace ConfuserNext.Core.Project {
 					ret = ParseExpression(true);
 					PatternToken parens = ReadToken();
 					if (parens.Type != TokenType.RParens)
-						throw MismatchParens(token.Position.Value);
+						throw PatternParser.MismatchParens(token.Position.Value);
 				}
 					break;
 				case TokenType.Identifier:
@@ -128,7 +128,7 @@ namespace ConfuserNext.Core.Project {
 						// unary operator
 						PatternOperator op = ops[token.Value]();
 						if (!op.IsUnary)
-							throw UnexpectedToken(token);
+							throw PatternParser.UnexpectedToken(token);
 						op.OperandA = ParseExpression();
 						ret = op;
 					}
@@ -138,27 +138,27 @@ namespace ConfuserNext.Core.Project {
 
 						PatternToken parens = ReadToken();
 						if (parens.Type != TokenType.LParens)
-							throw UnexpectedToken(parens, '(');
+							throw PatternParser.UnexpectedToken(parens, '(');
 
 						fn.Arguments = new List<PatternExpression>(fn.ArgumentCount);
 						for (int i = 0; i < fn.ArgumentCount; i++) {
 							if (PeekToken() == null)
-								throw UnexpectedEnd();
+								throw PatternParser.UnexpectedEnd();
 							if (PeekToken().Value.Type == TokenType.RParens)
-								throw BadArgCount(token, fn.ArgumentCount);
+								throw PatternParser.BadArgCount(token, fn.ArgumentCount);
 							if (i != 0) {
 								PatternToken comma = ReadToken();
 								if (comma.Type != TokenType.Comma)
-									throw UnexpectedToken(comma, ',');
+									throw PatternParser.UnexpectedToken(comma, ',');
 							}
 							fn.Arguments.Add(ParseExpression());
 						}
 
 						parens = ReadToken();
 						if (parens.Type == TokenType.Comma)
-							throw BadArgCount(token, fn.ArgumentCount);
+							throw PatternParser.BadArgCount(token, fn.ArgumentCount);
 						if (parens.Type != TokenType.RParens)
-							throw MismatchParens(parens.Position.Value);
+							throw PatternParser.MismatchParens(parens.Position.Value);
 
 						ret = fn;
 					}
@@ -166,12 +166,12 @@ namespace ConfuserNext.Core.Project {
                         if (bool.TryParse(token.Value, out bool boolValue))
                             ret = new LiteralExpression(boolValue);
                         else
-                            throw UnknownToken(token);
+                            throw PatternParser.UnknownToken(token);
                     }
 
 					break;
 				default:
-					throw UnexpectedToken(token);
+					throw PatternParser.UnexpectedToken(token);
 			}
 
 			if (!readBinOp)
@@ -188,7 +188,7 @@ namespace ConfuserNext.Core.Project {
 				PatternToken binOpToken = ReadToken();
 				PatternOperator binOp = ops[binOpToken.Value]();
 				if (binOp.IsUnary)
-					throw UnexpectedToken(binOpToken);
+					throw PatternParser.UnexpectedToken(binOpToken);
 				binOp.OperandA = ret;
 				binOp.OperandB = ParseExpression();
 				ret = binOp;

@@ -73,14 +73,44 @@ namespace ConfuserNext.Core {
 				if (pass != null) //pfx
 				{
 					// http://stackoverflow.com/a/12196742/462805
-					var cert = new X509Certificate2();
-					cert.Import(path, pass, X509KeyStorageFlags.Exportable);
+					// The parameterless X509Certificate2() + Import(...) pair, and
+					// X509Certificate2.PrivateKey, are both obsolete (SYSLIB0026/SYSLIB0028).
+					// X509CertificateLoader is the replacement, but it only exists on .NET 9+: on
+					// net8.0/net48 the file-loading constructor overload is the non-obsolete choice,
+					// while on net10.0 that same overload is itself obsolete (SYSLIB0057) in favor of
+					// X509CertificateLoader - hence the version split below to stay warning-free on
+					// every TFM this project targets.
+#if NET9_0_OR_GREATER
+					var cert = X509CertificateLoader.LoadPkcs12FromFile(path, pass, X509KeyStorageFlags.Exportable);
+#else
+					var cert = new X509Certificate2(path, pass, X509KeyStorageFlags.Exportable);
+#endif
+					// GetRSAPrivateKey()'s result isn't guaranteed to support the legacy CSP blob
+					// format ExportCspBlob needs (unlike the old, now-obsolete PrivateKey property's
+					// result always did), so re-export its parameters into a fresh
+					// RSACryptoServiceProvider for that call.
 
-					var rsa = cert.PrivateKey as RSACryptoServiceProvider;
-					if (rsa == null)
-						throw new ArgumentException("RSA key does not present in the certificate.", "path");
+					using RSA certRsa = cert.GetRSAPrivateKey();
+					if (certRsa == null)
+						throw new ArgumentException("RSA key does not present in the certificate.", nameof(path));
 
-					return new StrongNameKey(rsa.ExportCspBlob(true));
+					using var rsa = new RSACryptoServiceProvider();
+					rsa.ImportParameters(certRsa.ExportParameters(true));
+
+					byte[] blob = rsa.ExportCspBlob(true);
+					// dnlib's StrongNameKey parser requires the CSP blob header's aiKeyAlg field
+					// (bytes 4-7, little-endian) to be exactly CALG_RSA_SIGN (0x00002400), or it
+					// throws "Not RSA sign". RSACryptoServiceProvider.ExportCspBlob always tags a
+					// key imported via ImportParameters as CALG_RSA_KEYX instead, regardless of any
+					// requested CspParameters.KeyNumber, since the import creates no persisted
+					// container with a signature key spec. The RSA key material (modulus/exponents)
+					// is identical either way; only this label differs, so it is safe to force it.
+					blob[4] = 0x00;
+					blob[5] = 0x24;
+					blob[6] = 0x00;
+					blob[7] = 0x00;
+
+					return new StrongNameKey(blob);
 				}
 				return new StrongNameKey(path);
 			}
@@ -101,14 +131,14 @@ namespace ConfuserNext.Core {
 			Dictionary<string, string> packerParams = null;
 
 			if (proj.Packer != null) {
-				if (!packers.ContainsKey(proj.Packer.Id)) {
+				if (!packers.TryGetValue(proj.Packer.Id, out Packer value)) {
 					context.Logger.ErrorFormat("Cannot find packer with ID '{0}'.", proj.Packer.Id);
 					throw new ConfuserException(null);
 				}
 				if (proj.Debug)
 					context.Logger.Warn("Generated Debug symbols might not be usable with packers!");
 
-				packer = packers[proj.Packer.Id];
+				packer = value;
 				packerParams = new Dictionary<string, string>(proj.Packer, StringComparer.OrdinalIgnoreCase);
 			}
 

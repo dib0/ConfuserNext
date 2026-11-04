@@ -23,7 +23,7 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 			return key.Item2(value);
 		}
 
-		void Compile(RPContext ctx, CilBody body, out Func<int, int> expCompiled, out Expression inverse) {
+        static void Compile(RPContext ctx, CilBody body, out Func<int, int> expCompiled, out Expression inverse) {
 			var var = new Variable("{VAR}");
 			var result = new Variable("{RESULT}");
 
@@ -40,7 +40,7 @@ namespace ConfuserNext.Protections.ReferenceProxy {
 		Tuple<Expression, Func<int, int>> GetKey(RPContext ctx, MethodDef init) {
             if (!keys.TryGetValue(init, out Tuple<Expression, Func<int, int>> ret))
             {
-                Compile(ctx, init.Body, out Func<int, int> keyFunc, out Expression inverse);
+                ExpressionEncoding.Compile(ctx, init.Body, out Func<int, int> keyFunc, out Expression inverse);
                 keys[init] = ret = Tuple.Create(inverse, keyFunc);
             }
             return ret;

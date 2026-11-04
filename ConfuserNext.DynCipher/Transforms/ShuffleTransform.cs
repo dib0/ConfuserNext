@@ -52,8 +52,8 @@ namespace ConfuserNext.DynCipher.Transforms {
 			Variable[] usage = context.Usages[st];
 			Variable[] definition = context.Definitions[st];
 			for (int i = startIndex - 1; i >= 0; i--) {
-				if (context.Usages[block.Statements[i]].Intersect(definition).Count() > 0 ||
-				    context.Definitions[block.Statements[i]].Intersect(usage).Count() > 0)
+				if (context.Usages[block.Statements[i]].Intersect(definition).Any() ||
+                    context.Definitions[block.Statements[i]].Intersect(usage).Any())
 					return i;
 			}
 			return 0;
@@ -63,8 +63,8 @@ namespace ConfuserNext.DynCipher.Transforms {
 			Variable[] usage = context.Usages[st];
 			Variable[] definition = context.Definitions[st];
 			for (int i = startIndex + 1; i < block.Statements.Count; i++) {
-				if (context.Usages[block.Statements[i]].Intersect(definition).Count() > 0 ||
-				    context.Definitions[block.Statements[i]].Intersect(usage).Count() > 0)
+				if (context.Usages[block.Statements[i]].Intersect(definition).Any() ||
+                    context.Definitions[block.Statements[i]].Intersect(usage).Any())
 					return i;
 			}
 			return block.Statements.Count - 1;

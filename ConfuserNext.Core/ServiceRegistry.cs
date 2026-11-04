@@ -32,9 +32,9 @@ namespace ConfuserNext.Core {
 		/// <exception cref="System.ArgumentException">Service with same ID or type has already registered.</exception>
 		public void RegisterService(string serviceId, Type serviceType, object service) {
 			if (!serviceIds.Add(serviceId))
-				throw new ArgumentException("Service with ID '" + serviceIds + "' has already registered.", "serviceId");
+				throw new ArgumentException("Service with ID '" + serviceIds + "' has already registered.", nameof(serviceId));
 			if (services.ContainsKey(serviceType))
-				throw new ArgumentException("Service with type '" + service.GetType().Name + "' has already registered.", "service");
+				throw new ArgumentException("Service with type '" + service.GetType().Name + "' has already registered.", nameof(service));
 			services.Add(serviceType, service);
 		}
 

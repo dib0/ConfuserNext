@@ -80,7 +80,14 @@ namespace ConfuserNext.Runtime {
 				ver5 = Environment.Version.Revision > 17020;
 			}
 			else
+				// Deliberate: reads ModuleHandle's own internal pointer field by reinterpreting its
+				// storage, the same low-level trick as the ver4 branch above (just without needing
+				// reflection, since this runtime's single internal field layout is stable pre-.NET
+				// 4). Required for the JIT-hooking technique this class implements; not something a
+				// managed-type-pointer warning can be designed around here.
+#pragma warning disable CS8500
 				moduleHnd = *(IntPtr*)(&hnd);
+#pragma warning restore CS8500
 
 			Hook();
 		}

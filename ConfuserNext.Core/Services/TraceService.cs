@@ -21,9 +21,9 @@ namespace ConfuserNext.Core.Services {
 
 		/// <inheritdoc />
 		public MethodTrace Trace(MethodDef method) {
-			if (method == null)
-				throw new ArgumentNullException("method");
-			return cache.GetValueOrDefaultLazy(method, m => cache[m] = new MethodTrace(m)).Trace();
+            if (method == null)
+            	throw new ArgumentNullException(nameof(method));
+            return cache.GetValueOrDefaultLazy(method, m => cache[m] = new MethodTrace(m)).Trace();
 		}
 	}
 
@@ -206,11 +206,11 @@ namespace ConfuserNext.Core.Services {
 		/// <exception cref="InvalidMethodException">The method body is invalid.</exception>
 		public int[] TraceArguments(Instruction instr) {
 			if (instr.OpCode.Code != Code.Call && instr.OpCode.Code != Code.Callvirt && instr.OpCode.Code != Code.Newobj)
-				throw new ArgumentException("Invalid call instruction.", "instr");
+				throw new ArgumentException("Invalid call instruction.", nameof(instr));
 
             instr.CalculateStackUsage(out int push, out int pop); // pop is number of arguments
             if (pop == 0)
-				return new int[0];
+				return Array.Empty<int>();
 
 			int instrIndex = offset2index[instr.Offset];
 			int argCount = pop;
@@ -227,8 +227,8 @@ namespace ConfuserNext.Core.Services {
 					if (BeforeStackDepths[index] == targetStack)
 						break;
 
-					if (fromInstrs.ContainsKey(index))
-						foreach (Instruction fromInstr in fromInstrs[index]) {
+					if (fromInstrs.TryGetValue(index, out List<Instruction> value))
+						foreach (Instruction fromInstr in value) {
 							if (!seen.Contains(fromInstr.Offset)) {
 								seen.Add(fromInstr.Offset);
 								working.Enqueue(offset2index[fromInstr.Offset]);

@@ -28,12 +28,14 @@ namespace ConfuserNext.Tests.Core {
 			Assert.True(factoryCalled);
 		}
 
-		[Fact]
+        private static readonly int[] expected = new[] { 1, 2 };
+
+        [Fact]
 		public void AddListEntry_CreatesListOnFirstAddAndAppendsAfter() {
 			var dict = new Dictionary<string, List<int>>();
 			dict.AddListEntry("k", 1);
 			dict.AddListEntry("k", 2);
-			Assert.Equal(new[] { 1, 2 }, dict["k"]);
+			Assert.Equal(expected, dict["k"]);
 		}
 
 		[Fact]

@@ -257,8 +257,8 @@ namespace ConfuserNext.Renamer {
                 return slot;
 			};
 
-			if (vTbl.InterfaceSlots.ContainsKey(iface)) {
-				vTbl.InterfaceSlots[iface] = vTbl.InterfaceSlots[iface].Values.ToDictionary(
+			if (vTbl.InterfaceSlots.TryGetValue(iface, out Dictionary<VTableSignature, VTableSlot> value)) {
+				vTbl.InterfaceSlots[iface] = value.Values.ToDictionary(
 					slot => slot.Signature, implLookup);
 			}
 			else {
@@ -267,8 +267,8 @@ namespace ConfuserNext.Renamer {
 			}
 
 			foreach (var baseIface in ifaceVTbl.InterfaceSlots) {
-				if (vTbl.InterfaceSlots.ContainsKey(baseIface.Key)) {
-					vTbl.InterfaceSlots[baseIface.Key] = vTbl.InterfaceSlots[baseIface.Key].Values.ToDictionary(
+				if (vTbl.InterfaceSlots.TryGetValue(baseIface.Key, out Dictionary<VTableSignature, VTableSlot> baseValue)) {
+					vTbl.InterfaceSlots[baseIface.Key] = baseValue.Values.ToDictionary(
 						slot => slot.Signature, implLookup);
 				}
 				else {

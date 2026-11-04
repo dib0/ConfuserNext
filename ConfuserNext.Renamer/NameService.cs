@@ -180,7 +180,7 @@ namespace ConfuserNext.Renamer {
 			}
 		}
 
-		string ParseGenericName(string name, out int? count) {
+        static string ParseGenericName(string name, out int? count) {
 			if (name.LastIndexOf('`') != -1) {
 				int index = name.LastIndexOf('`');
                 if (int.TryParse(name.Substring(index + 1), out int c))
@@ -193,7 +193,7 @@ namespace ConfuserNext.Renamer {
 			return name;
 		}
 
-		string MakeGenericName(string name, int? count) {
+        static string MakeGenericName(string name, int? count) {
 			if (count == null)
 				return name;
 			else
@@ -202,7 +202,7 @@ namespace ConfuserNext.Renamer {
 
 		public string ObfuscateName(string name, RenameMode mode) {
 			string newName = null;
-            name = ParseGenericName(name, out int? count);
+            name = NameService.ParseGenericName(name, out int? count);
 
             if (string.IsNullOrEmpty(name))
 				return string.Empty;
@@ -215,16 +215,16 @@ namespace ConfuserNext.Renamer {
 				if (reversibleRenamer == null)
 					throw new ArgumentException("Password not provided for reversible renaming.");
 				newName = reversibleRenamer.Encrypt(name);
-				return MakeGenericName(newName, count);
+				return NameService.MakeGenericName(newName, count);
 			}
 
-			if (nameMap1.ContainsKey(name))
-				return nameMap1[name];
+			if (nameMap1.TryGetValue(name, out string value))
+				return value;
 
 			byte[] hash = Utils.Xor(Utils.SHA1(Encoding.UTF8.GetBytes(name)), nameSeed);
 			for (int i = 0; i < 100; i++) {
 				newName = ObfuscateNameInternal(hash, mode);
-				if (!identifiers.Contains(MakeGenericName(newName, count)))
+				if (!identifiers.Contains(NameService.MakeGenericName(newName, count)))
 					break;
 				hash = Utils.SHA1(hash);
 			}
@@ -234,7 +234,7 @@ namespace ConfuserNext.Renamer {
 				nameMap1[name] = newName;
 			}
 
-			return MakeGenericName(newName, count);
+			return NameService.MakeGenericName(newName, count);
 		}
 
 		public string RandomName() {
@@ -308,8 +308,8 @@ namespace ConfuserNext.Renamer {
 
 		// Especially chosen, just to mess with people.
 		// Inspired by: http://xkcd.com/1137/ :D
-		static readonly char[] unicodeCharset = new char[] { }
-			.Concat(Enumerable.Range(0x200b, 5).Select(ord => (char)ord))
+		static readonly char[] unicodeCharset = Array.Empty<char>()
+            .Concat(Enumerable.Range(0x200b, 5).Select(ord => (char)ord))
 			.Concat(Enumerable.Range(0x2029, 6).Select(ord => (char)ord))
 			.Concat(Enumerable.Range(0x206a, 6).Select(ord => (char)ord))
 			.Except(new[] { '\u2029' })

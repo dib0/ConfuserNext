@@ -13,15 +13,21 @@ using dnlib.DotNet.Emit;
 using dnlib.IO;
 
 namespace ConfuserNext.Renamer.Analyzers {
-	internal class WPFAnalyzer : IRenamer {
+	internal partial class WPFAnalyzer : IRenamer {
 		static readonly object BAMLKey = new object();
 
+#if NET7_0_OR_GREATER
+		static readonly Regex ResourceNamePattern = MyRegex();
+#else
 		static readonly Regex ResourceNamePattern = new Regex("^.*\\.g\\.resources$");
+#endif
 		internal static readonly Regex UriPattern = new Regex("(?:;COMPONENT|APPLICATION\\:,,,)(/.+\\.[BX]AML)$");
 		BAMLAnalyzer analyzer;
 
 		internal Dictionary<string, List<IBAMLReference>> bamlRefs = new Dictionary<string, List<IBAMLReference>>(StringComparer.OrdinalIgnoreCase);
-		public event Action<BAMLAnalyzer, BamlElement> AnalyzeBAMLElement;
+        internal static readonly string[] separator = new string[] { "/" };
+
+        public event Action<BAMLAnalyzer, BamlElement> AnalyzeBAMLElement;
 
 		public void Analyze(ConfuserContext context, INameService service, ProtectionParameters parameters, IDnlibDef def) {
 			var method = def as MethodDef;
@@ -69,7 +75,7 @@ namespace ConfuserNext.Renamer.Analyzers {
                          * then we want to keep the relative path and namespace intact. We should be obfuscating it like this - /some.namespace;component/somefolder/asjdjh2398498dswk.xaml
                         * */
 
-                        string[] completePath = newName.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] completePath = newName.Split(separator, StringSplitOptions.RemoveEmptyEntries);
                         string newShinyName = string.Empty;
                         for (int i = 0; i <= completePath.Length - 2; i++)
                         {
@@ -176,7 +182,7 @@ namespace ConfuserNext.Renamer.Analyzers {
 						var match = UriPattern.Match(operand);
 						if (match.Success)
 							operand = match.Groups[1].Value;
-						else if (operand.Contains("/"))
+						else if (operand.Contains('/'))
 							context.Logger.WarnFormat("Fail to extract XAML name from '{0}'.", instr.Operand);
 
 						var reference = new BAMLStringReference(instr);
@@ -334,5 +340,10 @@ namespace ConfuserNext.Renamer.Analyzers {
 			if (wpfResInfo.Count > 0)
 				context.Annotations.Set(module, BAMLKey, wpfResInfo);
 		}
-	}
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex("^.*\\.g\\.resources$")]
+        private static partial Regex MyRegex();
+#endif
+    }
 }

@@ -38,8 +38,8 @@ namespace ConfuserNext.Protections.ControlFlow {
 				for (int i = 0; i < body.Instructions.Count; i++) {
 					var instr = body.Instructions[i];
 
-					if (BeforeStack.ContainsKey(instr.Offset))
-						currentStack = BeforeStack[instr.Offset];
+					if (BeforeStack.TryGetValue(instr.Offset, out int value))
+						currentStack = value;
 
 					BeforeStack[instr.Offset] = currentStack;
 					instr.UpdateStack(ref currentStack, hasReturnValue);
@@ -111,7 +111,7 @@ namespace ConfuserNext.Protections.ControlFlow {
 			}
 		}
 
-		LinkedList<Instruction[]> SpiltStatements(InstrBlock block, Trace trace, CFContext ctx) {
+        static LinkedList<Instruction[]> SpiltStatements(InstrBlock block, Trace trace, CFContext ctx) {
 			var statements = new LinkedList<Instruction[]>();
 			var currentStatement = new List<Instruction>();
 
@@ -204,7 +204,7 @@ namespace ConfuserNext.Protections.ControlFlow {
 			}
 
 			foreach (InstrBlock block in GetAllBlocks(root)) {
-				LinkedList<Instruction[]> statements = SpiltStatements(block, trace, ctx);
+				LinkedList<Instruction[]> statements = SwitchMangler.SpiltStatements(block, trace, ctx);
 
 				// Make sure .ctor is executed before switch
 				if (ctx.Method.IsInstanceConstructor) {

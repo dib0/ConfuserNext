@@ -16,6 +16,14 @@
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!--
+      NU1702 fires wherever a net8.0/net10.0/net48 project references ConfuserNext.Runtime, which
+      intentionally targets only net40 (see ConfuserNext.Runtime.csproj's own comment: it is never
+      executed directly - its IL is read with dnlib and cloned into whatever assembly is being
+      protected - so a single net40 build is the correct, broadest-compatible source for that IL,
+      not a project mis-targeting).
+    -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

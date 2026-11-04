@@ -15,7 +15,7 @@ namespace ConfuserNext.ViewModel {
 			Icon = decoder.Frames.First(frame => frame.Width == 64);
 		}
 
-		public ICommand LaunchBrowser {
+		public static ICommand LaunchBrowser {
 			get { return new RelayCommand<string>(site => Process.Start(site)); }
 		}
 

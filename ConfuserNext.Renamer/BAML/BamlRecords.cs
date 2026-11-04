@@ -79,7 +79,7 @@ namespace ConfuserNext.Renamer.BAML {
 			Debug.Assert(reader.BaseStream.Position - pos == size);
 		}
 
-		int SizeofEncodedInt(int val) {
+        static int SizeofEncodedInt(int val) {
 			if ((val & ~0x7F) == 0) {
 				return 1;
 			}
@@ -99,7 +99,7 @@ namespace ConfuserNext.Renamer.BAML {
 			long pos = writer.BaseStream.Position;
 			WriteData(writer);
 			var size = (int)(writer.BaseStream.Position - pos);
-			size = SizeofEncodedInt(SizeofEncodedInt(size) + size) + size;
+			size = SizedBamlRecord.SizeofEncodedInt(SizedBamlRecord.SizeofEncodedInt(size) + size) + size;
 			writer.BaseStream.Position = pos;
 			writer.WriteEncodedInt(size);
 			WriteData(writer);

@@ -5,7 +5,7 @@ using dnlib.DotNet.Emit;
 
 namespace ConfuserNext.Protections.ControlFlow {
 	internal class JumpMangler : ManglerBase {
-		LinkedList<Instruction[]> SpiltFragments(InstrBlock block, CFContext ctx) {
+        static LinkedList<Instruction[]> SpiltFragments(InstrBlock block, CFContext ctx) {
 			var fragments = new LinkedList<Instruction[]>();
 			var currentFragment = new List<Instruction>();
 
@@ -67,7 +67,7 @@ namespace ConfuserNext.Protections.ControlFlow {
 		public override void Mangle(CilBody body, ScopeBlock root, CFContext ctx) {
 			body.MaxStack++;
 			foreach (InstrBlock block in GetAllBlocks(root)) {
-				LinkedList<Instruction[]> fragments = SpiltFragments(block, ctx);
+				LinkedList<Instruction[]> fragments = JumpMangler.SpiltFragments(block, ctx);
 				if (fragments.Count < 4) continue;
 
 				LinkedListNode<Instruction[]> current = fragments.First;

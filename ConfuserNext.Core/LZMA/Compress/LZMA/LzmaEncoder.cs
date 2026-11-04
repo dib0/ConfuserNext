@@ -824,7 +824,7 @@ namespace SevenZip.Compression.LZMA {
 			}
 		}
 
-		private bool ChangePair(UInt32 smallDist, UInt32 bigDist) {
+		private static bool ChangePair(UInt32 smallDist, UInt32 bigDist) {
 			const int kDif = 7;
 			return (smallDist < ((UInt32)(1) << (32 - kDif)) && bigDist >= (smallDist << kDif));
 		}

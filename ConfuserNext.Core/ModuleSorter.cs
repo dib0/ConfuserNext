@@ -31,12 +31,12 @@ namespace ConfuserNext.Core {
 					roots.Remove(m);
 				}
 
-			var sorted = SortGraph(roots, edges).ToList();
+			var sorted = ModuleSorter.SortGraph(roots, edges).ToList();
 			Debug.Assert(sorted.Count == modules.Count);
 			return sorted;
 		}
 
-		IEnumerable<ModuleDefMD> SortGraph(IEnumerable<ModuleDefMD> roots, IList<DependencyGraphEdge> edges) {
+        static IEnumerable<ModuleDefMD> SortGraph(IEnumerable<ModuleDefMD> roots, IList<DependencyGraphEdge> edges) {
 			var visited = new HashSet<ModuleDefMD>();
 			var queue = new Queue<ModuleDefMD>(roots);
 			do {

@@ -15,6 +15,20 @@ namespace ConfuserNext.Renamer.BAML {
 		readonly ConfuserContext context;
 		readonly INameService service;
 
+		/// <summary>
+		///     Percent-encodes each segment of a '/'-separated relative path, preserving the '/'
+		///     separators themselves - i.e. what the now-obsolete <c>Uri.EscapeUriString</c> did for
+		///     a path-shaped input (it is obsolete for whole-URI use because it can mis-encode
+		///     reserved characters like '?' or '#' when a string actually contains query/fragment
+		///     syntax, which a resource path here never does). Used purely to build/look up
+		///     dictionary keys matching WPF's own pack-URI-escaped resource names, not for an actual
+		///     network request, so <c>Uri.EscapeDataString</c> applied per segment is the
+		///     non-obsolete equivalent.
+		/// </summary>
+		static string EscapeUriPath(string path) {
+			return string.Join("/", path.Split('/').Select(Uri.EscapeDataString));
+		}
+
 		readonly Dictionary<string, List<MethodDef>> methods = new Dictionary<string, List<MethodDef>>();
 		readonly Dictionary<string, List<EventDef>> events = new Dictionary<string, List<EventDef>>();
 		readonly Dictionary<string, List<PropertyDef>> properties = new Dictionary<string, List<PropertyDef>>();
@@ -281,7 +295,7 @@ namespace ConfuserNext.Renamer.BAML {
 					elem.Type = ResolveType(((ElementStartRecord)elem.Header).TypeId);
 					elem.Attribute = elem.Parent.Attribute;
 					if (elem.Attribute != null)
-						elem.Type = GetAttributeType(elem.Attribute);
+						elem.Type = BAMLAnalyzer.GetAttributeType(elem.Attribute);
 					break;
 
 				case BamlRecordType.PropertyArrayStart:
@@ -292,7 +306,7 @@ namespace ConfuserNext.Renamer.BAML {
 					elem.Type = attrInfo.Item3;
 					elem.Attribute = attrInfo.Item1;
 					if (elem.Attribute != null)
-						elem.Type = GetAttributeType(elem.Attribute);
+						elem.Type = BAMLAnalyzer.GetAttributeType(elem.Attribute);
 					break;
 
 				case BamlRecordType.KeyElementStart:
@@ -304,7 +318,7 @@ namespace ConfuserNext.Renamer.BAML {
 			}
 		}
 
-		TypeDef GetAttributeType(IDnlibDef attr) {
+        static TypeDef GetAttributeType(IDnlibDef attr) {
 			ITypeDefOrRef retType = null;
 			if (attr is PropertyDef)
 				retType = ((PropertyDef)attr).PropertySig.RetType.ToBasicTypeDefOrRef();
@@ -325,7 +339,7 @@ namespace ConfuserNext.Renamer.BAML {
 					type = attrInfo.Item3;
 					attr = attrInfo.Item1;
 					if (attr != null)
-						type = GetAttributeType(attr);
+						type = BAMLAnalyzer.GetAttributeType(attr);
 
 					if (attrInfo.Item1 is EventDef) {
 						MethodDef method = root.Type.FindMethod(propRec.Value);
@@ -346,14 +360,14 @@ namespace ConfuserNext.Renamer.BAML {
 					type = attrInfo.Item3;
 					attr = attrInfo.Item1;
 					if (attr != null)
-						type = GetAttributeType(attr);
+						type = BAMLAnalyzer.GetAttributeType(attr);
 				}
 				else if (rec is ContentPropertyRecord) {
 					var attrInfo = ResolveAttribute(((ContentPropertyRecord)rec).AttributeId);
 					type = attrInfo.Item3;
 					attr = attrInfo.Item1;
 					if (elem.Attribute != null && attr != null)
-						type = GetAttributeType(attr);
+						type = BAMLAnalyzer.GetAttributeType(attr);
 					foreach (BamlElement child in elem.Children) {
 						child.Type = type;
 						child.Attribute = attr;
@@ -365,7 +379,7 @@ namespace ConfuserNext.Renamer.BAML {
 					type = attrInfo.Item3;
 					attr = attrInfo.Item1;
 					if (elem.Attribute != null && attr != null)
-						type = GetAttributeType(attr);
+						type = BAMLAnalyzer.GetAttributeType(attr);
 
 					if ((customRec.SerializerTypeId & ~0x4000) != 0 && (customRec.SerializerTypeId & ~0x4000) == 0x89) {
 						// See BamlRecordReader.GetCustomDependencyPropertyValue.
@@ -378,7 +392,7 @@ namespace ConfuserNext.Renamer.BAML {
 					type = attrInfo.Item3;
 					attr = attrInfo.Item1;
 					if (elem.Attribute != null && attr != null)
-						type = GetAttributeType(attr);
+						type = BAMLAnalyzer.GetAttributeType(attr);
 
 					if (extRec.Flags == 602) {
 						// Static Extension
@@ -501,7 +515,7 @@ namespace ConfuserNext.Renamer.BAML {
 						var match = WPFAnalyzer.UriPattern.Match(src);
 						if (match.Success)
 							src = match.Groups[1].Value;
-						else if (rec.Value.Contains("/"))
+						else if (rec.Value.Contains('/'))
 							context.Logger.WarnFormat("Fail to extract XAML name from '{0}'.", rec.Value);
 
 						if (!src.Contains("//")) {
@@ -515,8 +529,8 @@ namespace ConfuserNext.Renamer.BAML {
 						var bamlRefs = service.FindRenamer<WPFAnalyzer>().bamlRefs;
 						bamlRefs.AddListEntry(baml, reference);
 						bamlRefs.AddListEntry(xaml, reference);
-						bamlRefs.AddListEntry(Uri.EscapeUriString(baml), reference);
-						bamlRefs.AddListEntry(Uri.EscapeUriString(xaml), reference);
+						bamlRefs.AddListEntry(EscapeUriPath(baml), reference);
+						bamlRefs.AddListEntry(EscapeUriPath(xaml), reference);
 					}
 				}
 			}

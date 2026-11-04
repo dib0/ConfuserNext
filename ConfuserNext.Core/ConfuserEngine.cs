@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ConfuserNext.Core.Services;
@@ -62,7 +63,7 @@ namespace ConfuserNext.Core {
 		/// </exception>
 		public static Task Run(ConfuserParameters parameters, CancellationToken? token = null) {
 			if (parameters.Project == null)
-				throw new ArgumentNullException("parameters");
+				throw new ArgumentNullException(nameof(parameters));
 			if (token == null)
 				token = new CancellationTokenSource().Token;
 			return Task.Factory.StartNew(() => RunInternal(parameters, token.Value), token.Value);
@@ -496,6 +497,13 @@ namespace ConfuserNext.Core {
 			}
 		}
 
+		/// <summary>
+		///     Registry-based .NET Framework version scan. Windows-only by nature (it reads the NDP
+		///     setup keys); the one caller guards with <see cref="OperatingSystem.IsWindows" />.
+		/// </summary>
+#if !NETFRAMEWORK
+		[SupportedOSPlatform("windows")]
+#endif
 		static IEnumerable<string> GetFrameworkVersions() {
 			// http://msdn.microsoft.com/en-us/library/hh925568.aspx
 
@@ -741,8 +749,21 @@ namespace ConfuserNext.Core {
 				context.Logger.Error("---BEGIN DEBUG INFO---");
 
 				context.Logger.Error("Installed Framework Versions:");
-				foreach (string ver in GetFrameworkVersions()) {
-					context.Logger.ErrorFormat("    {0}", ver.Trim());
+#if NETFRAMEWORK
+				// .NET Framework itself only ever runs on Windows. Not a const: a literal `true`
+				// here would make the else branch below unreachable-code, i.e. just move the
+				// warning instead of eliminating it.
+				bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
+#else
+				bool isWindows = OperatingSystem.IsWindows();
+#endif
+				if (isWindows) {
+					foreach (string ver in GetFrameworkVersions()) {
+						context.Logger.ErrorFormat("    {0}", ver.Trim());
+					}
+				}
+				else {
+					context.Logger.Error("    (framework version scan is only implemented on Windows)");
 				}
 				context.Logger.Error("");
 

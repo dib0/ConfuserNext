@@ -143,8 +143,8 @@ namespace ConfuserNext.Core.Helpers {
 				}
 
 				foreach (Instruction instr in newMethodDef.Body.Instructions) {
-					if (instr.Operand != null && bodyMap.ContainsKey(instr.Operand))
-						instr.Operand = bodyMap[instr.Operand];
+					if (instr.Operand != null && bodyMap.TryGetValue(instr.Operand, out object value))
+						instr.Operand = value;
 
 					else if (instr.Operand is Instruction[])
 						instr.Operand = ((Instruction[])instr.Operand).Select(target => (Instruction)bodyMap[target]).ToArray();

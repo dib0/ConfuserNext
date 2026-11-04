@@ -226,9 +226,9 @@ namespace ConfuserNext.Renamer.BAML {
 			foreach (PropertyPathPart part in parts) {
 				if (part.IsHierarchical.HasValue) {
 					if (part.IsHierarchical.Value)
-						ret.Append("/");
+						ret.Append('/');
 					else
-						ret.Append(".");
+						ret.Append('.');
 				}
 
 				ret.Append(part.Name);
@@ -237,9 +237,9 @@ namespace ConfuserNext.Renamer.BAML {
 					PropertyPathIndexer[] args = part.IndexerArguments;
 					for (int i = 0; i < args.Length; i++) {
 						if (i == 0)
-							ret.Append("[");
+							ret.Append('[');
 						else
-							ret.Append(",");
+							ret.Append(',');
 
 						if (!string.IsNullOrEmpty(args[i].Type))
 							ret.AppendFormat("({0})", args[i].Type);
@@ -248,11 +248,11 @@ namespace ConfuserNext.Renamer.BAML {
 							foreach (char c in args[i].Value) {
 								// Too lazy to write all the level detection, just be safe, and escape all special chars.
 								if (c == '[' || c == ']' || c == ' ')
-									ret.Append("^");
+									ret.Append('^');
 								ret.Append(c);
 							}
 					}
-					ret.Append("]");
+					ret.Append(']');
 				}
 			}
 			return ret.ToString();

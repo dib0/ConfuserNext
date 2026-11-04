@@ -15,7 +15,7 @@ namespace ConfuserNext.Core {
 	/// <summary>
 	/// Obfuscation Attribute Marker
 	/// </summary>
-	public class ObfAttrMarker : Marker {
+	public partial class ObfAttrMarker : Marker {
 		struct ObfuscationAttributeInfo {
 			public IHasCustomAttribute Owner;
 			public bool? ApplyToMembers;
@@ -129,7 +129,11 @@ namespace ConfuserNext.Core {
 			}
 		}
 
+#if NET7_0_OR_GREATER
+		static readonly Regex OrderPattern = MyRegex();
+#else
 		static readonly Regex OrderPattern = new Regex("^(\\d+)\\. (.+)$");
+#endif
 
 		static IEnumerable<ObfuscationAttributeInfo> ReadObfuscationAttributes(IHasCustomAttribute item) {
 			var ret = new List<Tuple<int?, ObfuscationAttributeInfo>>();
@@ -228,7 +232,7 @@ namespace ConfuserNext.Core {
 			return true;
 		}
 
-		ProtectionSettingsInfo ToInfo(Rule rule, PatternExpression expr) {
+        static ProtectionSettingsInfo ToInfo(Rule rule, PatternExpression expr) {
 			var info = new ProtectionSettingsInfo();
 
 			info.Condition = expr;
@@ -292,12 +296,12 @@ namespace ConfuserNext.Core {
 			extModules = new List<byte[]>();
 
 			if (proj.Packer != null) {
-				if (!packers.ContainsKey(proj.Packer.Id)) {
+				if (!packers.TryGetValue(proj.Packer.Id, out Packer value)) {
 					context.Logger.ErrorFormat("Cannot find packer with ID '{0}'.", proj.Packer.Id);
 					throw new ConfuserException(null);
 				}
 
-				packer = packers[proj.Packer.Id];
+				packer = value;
 				packerParams = new Dictionary<string, string>(proj.Packer, StringComparer.OrdinalIgnoreCase);
 			}
 
@@ -374,7 +378,7 @@ namespace ConfuserNext.Core {
 			var layer = new List<ProtectionSettingsInfo>();
 			// Add rules
 			foreach (var rule in rules)
-				layer.Add(ToInfo(rule.Key, rule.Value));
+				layer.Add(ObfAttrMarker.ToInfo(rule.Key, rule.Value));
 
 			// Add obfuscation attributes
 			foreach (var attr in ReadObfuscationAttributes(module.Assembly)) {
@@ -498,5 +502,10 @@ namespace ConfuserNext.Core {
 					}
 				}
 		}
-	}
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex("^(\\d+)\\. (.+)$")]
+        private static partial Regex MyRegex();
+#endif
+    }
 }

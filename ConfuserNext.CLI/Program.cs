@@ -12,8 +12,16 @@ namespace ConfuserNext.CLI {
 		static int Main(string[] args) {
 			ConsoleColor original = Console.ForegroundColor;
 			Console.ForegroundColor = ConsoleColor.White;
-			string originalTitle = Console.Title;
-			Console.Title = "ConfuserNext";
+			// Console.Title's getter throws PlatformNotSupportedException outside Windows (its
+			// setter is merely a silent no-op there), hence the guard - not just to silence CA1416.
+#if NETFRAMEWORK
+			bool isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
+#else
+			bool isWindows = OperatingSystem.IsWindows();
+#endif
+			string originalTitle = isWindows ? Console.Title : null;
+			if (isWindows)
+				Console.Title = "ConfuserNext";
 			try {
 				bool noPause = false;
 				bool debug = false;
@@ -116,7 +124,8 @@ namespace ConfuserNext.CLI {
 			}
 			finally {
 				Console.ForegroundColor = original;
-				Console.Title = originalTitle;
+				if (isWindows)
+					Console.Title = originalTitle;
 			}
 		}
 

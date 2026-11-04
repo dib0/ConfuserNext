@@ -68,13 +68,13 @@ namespace ConfuserNext.Core.Services {
 		/// </exception>
 		/// <exception cref="System.ArgumentException">Invalid <paramref name="offset" /> or <paramref name="length" />.</exception>
 		public void NextBytes(byte[] buffer, int offset, int length) {
-			if (buffer == null)
-				throw new ArgumentNullException("buffer");
-			if (offset < 0)
-				throw new ArgumentOutOfRangeException("offset");
-			if (length < 0)
-				throw new ArgumentOutOfRangeException("length");
-			if (buffer.Length - offset < length)
+            if (buffer == null)
+            	throw new ArgumentNullException(nameof(buffer));
+            if (offset < 0)
+            	throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0)
+            	throw new ArgumentOutOfRangeException(nameof(length));
+            if (buffer.Length - offset < length)
 				throw new ArgumentException("Invalid offset or length.");
 
 			while (length > 0) {
@@ -205,7 +205,7 @@ namespace ConfuserNext.Core.Services {
 		/// <inheritdoc />
 		public RandomGenerator GetRandomGenerator(string id) {
 			if (string.IsNullOrEmpty(id))
-				throw new ArgumentNullException("id");
+				throw new ArgumentNullException(nameof(id));
 			byte[] newSeed = seed;
 			byte[] idHash = Utils.SHA256(Encoding.UTF8.GetBytes(id));
 			for (int i = 0; i < 32; i++)

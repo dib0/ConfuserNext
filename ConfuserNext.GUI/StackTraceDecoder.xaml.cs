@@ -56,7 +56,11 @@ namespace ConfuserNext {
 			}
 		}
 
+#if NET7_0_OR_GREATER
+		readonly Regex mapSymbolMatcher = MyRegex();
+#else
 		readonly Regex mapSymbolMatcher = new Regex("_[a-zA-Z0-9]+");
+#endif
 		readonly Regex passSymbolMatcher = new Regex("[a-zA-Z0-9_$]{23,}");
 		ReversibleRenamer renamer;
 
@@ -84,5 +88,10 @@ namespace ConfuserNext {
 				return sym;
 			}
 		}
-	}
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex("_[a-zA-Z0-9]+")]
+        private static partial Regex MyRegex();
+#endif
+    }
 }

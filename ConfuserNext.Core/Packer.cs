@@ -27,7 +27,7 @@ namespace ConfuserNext.Core {
 		/// <param name="module">The stub module.</param>
 		/// <param name="snKey">The strong name key.</param>
 		/// <param name="prot">The packer protection that applies to the stub.</param>
-		protected void ProtectStub(ConfuserContext context, string fileName, byte[] module, StrongNameKey snKey, Protection prot = null) {
+		protected static void ProtectStub(ConfuserContext context, string fileName, byte[] module, StrongNameKey snKey, Protection prot = null) {
 			string tmpDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 			string outDir = Path.Combine(tmpDir, Path.GetRandomFileName());
 			Directory.CreateDirectory(tmpDir);

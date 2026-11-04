@@ -56,9 +56,9 @@ namespace ConfuserNext.Core {
 		public void Finish(bool successful) { }
 
 		/// <inheritdoc />
-		public void BeginModule(ModuleDef module) { }
+		public static void BeginModule(ModuleDef module) { }
 
 		/// <inheritdoc />
-		public void EndModule(ModuleDef module) { }
+		public static void EndModule(ModuleDef module) { }
 	}
 }

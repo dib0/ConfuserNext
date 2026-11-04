@@ -21,9 +21,9 @@ namespace ConfuserNext.Core.Services {
 
 		/// <inheritdoc />
 		public void Mark(IDnlibDef member, ConfuserComponent parentComp) {
-			if (member == null)
-				throw new ArgumentNullException("member");
-			if (member is ModuleDef)
+            if (member == null)
+            	throw new ArgumentNullException(nameof(member));
+            if (member is ModuleDef)
 				throw new ArgumentException("New ModuleDef cannot be marked.");
 			if (IsMarked(member)) // avoid double marking
 				return;

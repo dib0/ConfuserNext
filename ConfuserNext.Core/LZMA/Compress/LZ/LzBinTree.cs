@@ -311,7 +311,7 @@ namespace SevenZip.Compression.LZ {
 				Normalize();
 		}
 
-		private void NormalizeLinks(UInt32[] items, UInt32 numItems, UInt32 subValue) {
+		private static void NormalizeLinks(UInt32[] items, UInt32 numItems, UInt32 subValue) {
 			for (UInt32 i = 0; i < numItems; i++) {
 				UInt32 value = items[i];
 				if (value <= subValue)
@@ -324,6 +324,7 @@ namespace SevenZip.Compression.LZ {
 
 		private void Normalize() {
 			UInt32 subValue = _pos - _cyclicBufferSize;
+
 			NormalizeLinks(_son, _cyclicBufferSize * 2, subValue);
 			NormalizeLinks(_hash, _hashSizeSum, subValue);
 			ReduceOffsets((Int32)subValue);

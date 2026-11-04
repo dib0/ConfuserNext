@@ -25,10 +25,10 @@ namespace ConfuserNext.Core {
 		///     <paramref name="obj" /> or <paramref name="key" /> is <c>null</c>.
 		/// </exception>
 		public TValue Get<TValue>(object obj, object key, TValue defValue = default(TValue)) {
-			if (obj == null)
-				throw new ArgumentNullException("obj");
-			if (key == null)
-				throw new ArgumentNullException("key");
+            if (obj == null)
+            	throw new ArgumentNullException(nameof(obj));
+            if (key == null)
+            	throw new ArgumentNullException(nameof(key));
 
             if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
                 return defValue;
@@ -53,10 +53,10 @@ namespace ConfuserNext.Core {
 		///     <paramref name="obj" /> or <paramref name="key" /> is <c>null</c>.
 		/// </exception>
 		public TValue GetLazy<TValue>(object obj, object key, Func<object, TValue> defValueFactory) {
-			if (obj == null)
-				throw new ArgumentNullException("obj");
-			if (key == null)
-				throw new ArgumentNullException("key");
+            if (obj == null)
+            	throw new ArgumentNullException(nameof(obj));
+            if (key == null)
+            	throw new ArgumentNullException(nameof(key));
 
             if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
                 return defValueFactory(key);
@@ -81,10 +81,10 @@ namespace ConfuserNext.Core {
 		///     <paramref name="obj" /> or <paramref name="key" /> is <c>null</c>.
 		/// </exception>
 		public TValue GetOrCreate<TValue>(object obj, object key, Func<object, TValue> factory) {
-			if (obj == null)
-				throw new ArgumentNullException("obj");
-			if (key == null)
-				throw new ArgumentNullException("key");
+            if (obj == null)
+            	throw new ArgumentNullException(nameof(obj));
+            if (key == null)
+            	throw new ArgumentNullException(nameof(key));
 
             if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
                 objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();
@@ -110,10 +110,10 @@ namespace ConfuserNext.Core {
 		///     <paramref name="obj" /> or <paramref name="key" /> is <c>null</c>.
 		/// </exception>
 		public void Set<TValue>(object obj, object key, TValue value) {
-			if (obj == null)
-				throw new ArgumentNullException("obj");
-			if (key == null)
-				throw new ArgumentNullException("key");
+            if (obj == null)
+            	throw new ArgumentNullException(nameof(obj));
+            if (key == null)
+            	throw new ArgumentNullException(nameof(key));
 
             if (!annotations.TryGetValue(obj, out ListDictionary objAnno))
                 objAnno = annotations[new WeakReferenceKey(obj)] = new ListDictionary();

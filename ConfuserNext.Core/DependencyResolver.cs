@@ -66,17 +66,17 @@ namespace ConfuserNext.Core {
 				}
 			}
 
-			IEnumerable<Protection> sorted = SortGraph(roots, edges);
+			IEnumerable<Protection> sorted = DependencyResolver.SortGraph(roots, edges);
 			return sorted.ToList();
 		}
 
-		/// <summary>
-		///     Topologically sort the dependency graph.
-		/// </summary>
-		/// <param name="roots">The root protections.</param>
-		/// <param name="edges">The dependency graph edges.</param>
-		/// <returns>Topological sorted protections.</returns>
-		IEnumerable<Protection> SortGraph(IEnumerable<Protection> roots, IList<DependencyGraphEdge> edges) {
+        /// <summary>
+        ///     Topologically sort the dependency graph.
+        /// </summary>
+        /// <param name="roots">The root protections.</param>
+        /// <param name="edges">The dependency graph edges.</param>
+        /// <returns>Topological sorted protections.</returns>
+        static IEnumerable<Protection> SortGraph(IEnumerable<Protection> roots, IList<DependencyGraphEdge> edges) {
 			var queue = new Queue<Protection>(roots.OrderBy(prot => prot.FullId));
 			while (queue.Count > 0) {
 				Protection root = queue.Dequeue(); // Find a node with no incoming edges

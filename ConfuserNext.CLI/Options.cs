@@ -130,8 +130,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -295,7 +293,7 @@ namespace NDesk.Options {
 			if (prototype == null)
 				throw new ArgumentNullException ("prototype");
 			if (prototype.Length == 0)
-				throw new ArgumentException ("Cannot be the empty string.", "prototype");
+				throw new ArgumentException ("Cannot be the empty string.", nameof(prototype));
 			if (maxValueCount < 0)
 				throw new ArgumentOutOfRangeException ("maxValueCount");
 
@@ -309,17 +307,17 @@ namespace NDesk.Options {
 				throw new ArgumentException (
 						"Cannot provide maxValueCount of 0 for OptionValueType.Required or " +
 							"OptionValueType.Optional.",
-						"maxValueCount");
+						nameof(maxValueCount));
 			if (this.type == OptionValueType.None && maxValueCount > 1)
 				throw new ArgumentException (
 						string.Format ("Cannot provide maxValueCount of {0} for OptionValueType.None.", maxValueCount),
-						"maxValueCount");
+						nameof(maxValueCount));
 			if (Array.IndexOf (names, "<>") >= 0 && 
 					((names.Length == 1 && this.type != OptionValueType.None) ||
 					 (names.Length > 1 && this.MaxValueCount > 1)))
 				throw new ArgumentException (
 						"The default option handler '<>' cannot require values.",
-						"prototype");
+						nameof(prototype));
 		}
 
 		public string           Prototype       {get {return prototype;}}
@@ -335,7 +333,7 @@ namespace NDesk.Options {
 		public string[] GetValueSeparators ()
 		{
 			if (separators == null)
-				return new string [0];
+				return Array.Empty<string>();
 			return (string[]) separators.Clone ();
 		}
 
@@ -471,27 +469,21 @@ namespace NDesk.Options {
 			this.option = optionName;
 		}
 
-		protected OptionException (SerializationInfo info, StreamingContext context)
-			: base (info, context)
-		{
-			this.option = info.GetString ("OptionName");
-		}
+		// The formatter-based-serialization constructor and GetObjectData override that used to be
+		// here are both obsolete on modern .NET (SYSLIB0051/SYSLIB0003: BinaryFormatter-style
+		// exception serialization is deprecated and unused by this CLI - argument-parsing
+		// exceptions are never serialized across an AppDomain/process boundary) and were removed
+		// rather than suppressed. The base Exception's own (also-inherited) serialization support
+		// still applies; only the OptionName field would no longer round-trip through it.
 
 		public string OptionName {
 			get {return this.option;}
-		}
-
-		[SecurityPermission (SecurityAction.LinkDemand, SerializationFormatter = true)]
-		public override void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			base.GetObjectData (info, context);
-			info.AddValue ("OptionName", option);
 		}
 	}
 
 	public delegate void OptionAction<TKey, TValue> (TKey key, TValue value);
 
-	public class OptionSet : KeyedCollection<string, Option>
+	public partial class OptionSet : KeyedCollection<string, Option>
 	{
 		public OptionSet ()
 			: this (delegate (string f) {return f;})
@@ -607,7 +599,7 @@ namespace NDesk.Options {
 		{
 			if (action == null)
 				throw new ArgumentNullException ("action");
-			Option p = new ActionOption (prototype, description, 1, 
+			Option p = new ActionOption (prototype, description, 1,
 					delegate (OptionValueCollection v) { action (v [0]); });
 			base.Add (p);
 			return this;
@@ -622,7 +614,7 @@ namespace NDesk.Options {
 		{
 			if (action == null)
 				throw new ArgumentNullException ("action");
-			Option p = new ActionOption (prototype, description, 2, 
+			Option p = new ActionOption (prototype, description, 2,
 					delegate (OptionValueCollection v) {action (v [0], v [1]);});
 			base.Add (p);
 			return this;
@@ -756,8 +748,12 @@ namespace NDesk.Options {
 			return false;
 		}
 
-		private readonly Regex ValueOption = new Regex (
+#if NET7_0_OR_GREATER
+		private readonly Regex ValueOption = MyRegex();
+#else
+		private readonly Regex ValueOption = new Regex(
 			@"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$");
+#endif
 
 		protected bool GetOptionParts (string argument, out string flag, out string name, out string sep, out string value)
 		{
@@ -1021,7 +1017,7 @@ namespace NDesk.Options {
 							if ((i+1) == description.Length || description [i+1] != '}')
 								throw new InvalidOperationException ("Invalid option description: " + description);
 							++i;
-							sb.Append ("}");
+							sb.Append ('}');
 						}
 						else {
 							sb.Append (description.Substring (start, i - start));
@@ -1097,6 +1093,11 @@ namespace NDesk.Options {
 				return end;
 			return sep;
 		}
-	}
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex(@"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$")]
+        private static partial Regex MyRegex();
+#endif
+    }
 }
 

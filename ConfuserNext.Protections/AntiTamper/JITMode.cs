@@ -38,8 +38,9 @@ namespace ConfuserNext.Protections.AntiTamper {
 		uint v;
 		uint x;
 		uint z;
+        internal static readonly int[] keyIds = new[] { 0, 1, 2, 3, 4 };
 
-		public void HandleInject(AntiTamperProtection parent, ConfuserContext context, ProtectionParameters parameters) {
+        public void HandleInject(AntiTamperProtection parent, ConfuserContext context, ProtectionParameters parameters) {
 			this.context = context;
 			random = context.Registry.GetService<IRandomService>().GetRandomGenerator(parent.FullId);
 			z = random.NextUInt32();
@@ -101,7 +102,7 @@ namespace ConfuserNext.Protections.AntiTamper {
 				initMethod.Body.Instructions.Add(instr);
 
 			MutationHelper.InjectKeys(initMethod,
-			                          new[] { 0, 1, 2, 3, 4 },
+			                          keyIds,
 			                          new[] { (int)(name1 * name2), (int)z, (int)x, (int)c, (int)v });
 
 			var name = context.Registry.GetService<INameService>();

@@ -58,7 +58,7 @@ namespace ConfuserNext.Core {
 		/// <exception cref="System.ArgumentNullException">key is <c>null</c>.</exception>
 		public static void AddListEntry<TKey, TValue>(this IDictionary<TKey, List<TValue>> self, TKey key, TValue value) {
 			if (key == null)
-				throw new ArgumentNullException("key");
+				throw new ArgumentNullException(nameof(key));
             if (!self.TryGetValue(key, out List<TValue> list))
                 list = self[key] = new List<TValue>();
             list.Add(value);
