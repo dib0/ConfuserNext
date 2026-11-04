@@ -24,7 +24,6 @@ Features
 * Embedding dependency
 * Compressing output
 * Extensible plugin API
-* Many more are coming!
 
 Usage
 -----
