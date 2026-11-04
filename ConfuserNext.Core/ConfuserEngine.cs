@@ -98,15 +98,24 @@ namespace ConfuserNext.Core {
 
 				// Must happen before any module is loaded/marked below: Marker.MarkProject() does
 				// its own early dependency resolution (e.g. VTable construction walks base types up
-				// into corlib), and AssemblyResolver caches a failed resolution - adding this search
+				// into corlib, and scanning for System.Reflection.ObfuscationAttribute usages touches
+				// System.Runtime), and AssemblyResolver caches a failed resolution - adding a search
 				// path later (once context.Modules is known, as GetModernFrameworkSearchPaths did
 				// exclusively before) is too late for anything that resolver already attempted and
-				// cached as "not found" during marking. The host's own framework search path never
-				// depends on knowing the target module(s)' TFM (see GetModernFrameworkSearchPaths'
-				// doc comment on why the host's corlib version is always potentially needed), so it
-				// can safely be added this early.
+				// cached as "not found" during marking. Two kinds of path are needed this early:
+				// the host's own framework (ConfuserNext.Runtime helpers are always built against
+				// whatever framework hosts this process, regardless of the target's TFM - see
+				// AddHostFrameworkSearchPaths), and each target module's own declared framework
+				// (needed to resolve its own ordinary references, like System.Runtime itself, before
+				// GetModernFrameworkSearchPaths' later pass - which still runs, as a harmless no-op
+				// safety net for anything this lightweight pre-scan missed).
 #if !NETFRAMEWORK
-				if (AddHostFrameworkSearchPaths(asmResolver))
+				bool addedSearchPaths = AddHostFrameworkSearchPaths(asmResolver);
+				foreach (string path in GetDeclaredFrameworkSearchPaths(parameters.Project, context.BaseDirectory)) {
+					asmResolver.PostSearchPaths.Add(path);
+					addedSearchPaths = true;
+				}
+				if (addedSearchPaths)
 					asmResolver.FindExactMatch = true;
 #endif
 
@@ -553,6 +562,38 @@ namespace ConfuserNext.Core {
 				added = true;
 			}
 			return added;
+		}
+
+		/// <summary>
+		///     Lightly pre-loads each non-external module referenced by <paramref name="project" />
+		///     - just far enough to read its TargetFrameworkAttribute, with no assembly-reference
+		///     resolution involved - and returns the shared-framework search paths matching whatever
+		///     .NET (Core) major version(s) they declare. Must be called before
+		///     <see cref="Marker.MarkProject" /> (see call site) specifically so that a module's own
+		///     ordinary references (e.g. System.Runtime) are resolvable during marking's own early
+		///     analysis, not just later during <see cref="Inspection" />.
+		/// </summary>
+		static IEnumerable<string> GetDeclaredFrameworkSearchPaths(Project.ConfuserProject project, string baseDirectory) {
+			var majorVersions = new HashSet<int>();
+			foreach (Project.ProjectModule projModule in project) {
+				if (projModule.IsExternal)
+					continue;
+				string path = Path.IsPathRooted(projModule.Path) ? projModule.Path : Path.Combine(baseDirectory, projModule.Path);
+				if (!File.Exists(path))
+					continue;
+				try {
+					using (var tmp = ModuleDefMD.Load(path)) {
+						int? major = GetNetCoreAppMajorVersion(tmp);
+						if (major != null)
+							majorVersions.Add(major.Value);
+					}
+				}
+				catch {
+					// Best-effort pre-scan only; a real load problem surfaces properly later when
+					// Marker.MarkProject loads this module for real.
+				}
+			}
+			return FindFrameworkSearchPaths(majorVersions);
 		}
 #endif
 

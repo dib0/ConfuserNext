@@ -44,6 +44,17 @@ namespace ConfuserNext.Tests.Integration {
 		}
 
 		[Fact]
+		public void NoProtectionsAtAll_PresetNone_RunsWithoutError() {
+			var result = ObfuscationHarness.Protect(Array.Empty<ProtectionSpec>());
+			try {
+				Assert.True(result.OutputModuleBytes.Length > 0);
+			}
+			finally {
+				ObfuscationHarness.Cleanup(result);
+			}
+		}
+
+		[Fact]
 		public void AllProtections_Combined_RunWithoutError() {
 			var specs = AllProtectionIds().Select(a => new ProtectionSpec((string)a[0])).ToArray();
 			var result = ObfuscationHarness.Protect(specs, embeddedResourceName: "SampleApp.data.txt", embeddedResourceText: "embedded payload");
@@ -177,6 +188,48 @@ namespace ConfuserNext.Tests.Integration {
 		}
 
 		[Fact]
+		public void CompressorPacker_CompatMode_ActuallyRunsOnCoreClr() {
+			// Verifies the fix requested in session follow-up: CompatMode uses Assembly.Load (not
+			// Assembly.LoadModule, which CoreCLR never implements) and must therefore actually
+			// execute on a modern .NET runtime, not just build successfully.
+			var result = ObfuscationHarness.Protect(
+				Array.Empty<ProtectionSpec>(),
+				source: SampleAssemblyFactory.DefaultProgramSource.Replace(
+					"Console.WriteLine(sum);", "Console.WriteLine(sum); Console.WriteLine(\"COMPAT_PACKER_OK\");"),
+				packerId: "compressor",
+				configureProject: project => project.Packer["compat"] = "true");
+			try {
+				// The sample app is compiled (via SampleAssemblyFactory) against this test host's own
+				// implementation assemblies, so it must run under this same CoreCLR major version -
+				// what matters for this test is that it is CoreCLR (any version 5+ never implemented
+				// Assembly.LoadModule), not specifically net8.0.
+				string runtimeConfigPath = System.IO.Path.ChangeExtension(result.OutputModulePath, "runtimeconfig.json");
+				int hostMajor = Environment.Version.Major;
+				System.IO.File.WriteAllText(runtimeConfigPath, $@"{{
+  ""runtimeOptions"": {{
+    ""tfm"": ""net{hostMajor}.0"",
+    ""framework"": {{ ""name"": ""Microsoft.NETCore.App"", ""version"": ""{hostMajor}.0.0"" }},
+    ""rollForward"": ""LatestMinor""
+  }}
+}}");
+				var psi = new System.Diagnostics.ProcessStartInfo("dotnet", $"\"{result.OutputModulePath}\"") {
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false
+				};
+				using var process = System.Diagnostics.Process.Start(psi);
+				string stdout = process.StandardOutput.ReadToEnd();
+				string stderr = process.StandardError.ReadToEnd();
+				Assert.True(process.WaitForExit(30000), "packed app did not exit within 30s");
+				Assert.True(process.ExitCode == 0, $"packed app exited {process.ExitCode}.\nstdout:\n{stdout}\nstderr:\n{stderr}");
+				Assert.Contains("COMPAT_PACKER_OK", stdout);
+			}
+			finally {
+				ObfuscationHarness.Cleanup(result);
+			}
+		}
+
+		[Fact]
 		public void CompressorPacker_CompatMode_RunsWithoutError() {
 			var result = ObfuscationHarness.Protect(
 				new[] { new ProtectionSpec("constants") },
@@ -199,6 +252,23 @@ namespace ConfuserNext.Tests.Integration {
 			try {
 				string text = System.Text.Encoding.UTF8.GetString(result.OutputModuleBytes);
 				Assert.DoesNotContain("this text must not appear in plaintext", text);
+
+				string runtimeConfigPath = System.IO.Path.ChangeExtension(result.OutputModulePath, "runtimeconfig.json");
+				System.IO.File.WriteAllText(runtimeConfigPath, $@"{{
+  ""runtimeOptions"": {{
+    ""tfm"": ""net{Environment.Version.Major}.0"",
+    ""framework"": {{ ""name"": ""Microsoft.NETCore.App"", ""version"": ""{Environment.Version.Major}.0.0"" }},
+    ""rollForward"": ""LatestMinor""
+  }}
+}}");
+				var psi = new System.Diagnostics.ProcessStartInfo("dotnet", $"\"{result.OutputModulePath}\"") {
+					RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+				};
+				using var process = System.Diagnostics.Process.Start(psi);
+				string stdout = process.StandardOutput.ReadToEnd();
+				string stderr = process.StandardError.ReadToEnd();
+				process.WaitForExit(30000);
+				Assert.True(process.ExitCode == 0, $"exit={process.ExitCode}\nstdout={stdout}\nstderr={stderr}");
 			}
 			finally {
 				ObfuscationHarness.Cleanup(result);

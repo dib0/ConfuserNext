@@ -47,7 +47,11 @@ namespace ConfuserNext.Core {
 					Directory.CreateDirectory(dir);
 				WriteFileThenAwaitReadable(path, context.OutputModules[i]);
 			}
-			WriteFileThenAwaitReadable(Path.Combine(tmpDir, fileName), module);
+			string stubPath = Path.GetFullPath(Path.Combine(tmpDir, fileName));
+			string stubDir = Path.GetDirectoryName(stubPath);
+			if (!Directory.Exists(stubDir))
+				Directory.CreateDirectory(stubDir);
+			WriteFileThenAwaitReadable(stubPath, module);
 
 			var proj = new ConfuserProject();
 			proj.Seed = context.Project.Seed;

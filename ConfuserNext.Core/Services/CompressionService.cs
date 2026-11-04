@@ -37,7 +37,28 @@ namespace ConfuserNext.Core.Services {
 			Tuple<MethodDef, List<IDnlibDef>> decompressor = context.Annotations.GetOrCreate(module, Decompressor, m => {
 				var rt = context.Registry.GetService<IRuntimeService>();
 
-				List<IDnlibDef> members = InjectHelper.Inject(rt.GetRuntimeType("ConfuserNext.Runtime.Lzma"), module.GlobalType, module).ToList();
+				// Must inject Lzma as its own top-level type (added to module.Types), NOT flattened
+				// into module.GlobalType's nested types: Lzma's own type tree is 3 levels deep
+				// (Lzma > LzmaDecoder > LenDecoder), and re-parenting that chain so its root becomes
+				// <Module> makes the result fail to load on CoreCLR with
+				// "BadImageFormatException: Enclosing type(s) not found for type 'LenDecoder'" -
+				// confirmed to be a general issue with 2+-level-deep nested types whose ultimate
+				// ancestor is <Module>, reproduced with a minimal, Lzma-unrelated repro, not
+				// something specific to this type or to ConfuserNext's own injection logic.
+				TypeDef lzmaType = InjectHelper.Inject(rt.GetRuntimeType("ConfuserNext.Runtime.Lzma"), module);
+				module.Types.Add(lzmaType);
+				var members = new List<IDnlibDef>();
+				void CollectMembers(TypeDef type) {
+					members.Add(type);
+					foreach (MethodDef method in type.Methods)
+						members.Add(method);
+					foreach (FieldDef field in type.Fields)
+						members.Add(field);
+					foreach (TypeDef nested in type.NestedTypes)
+						CollectMembers(nested);
+				}
+				CollectMembers(lzmaType);
+
 				MethodDef decomp = null;
 				foreach (IDnlibDef member in members) {
 					if (member is MethodDef) {
