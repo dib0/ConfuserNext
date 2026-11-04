@@ -13,7 +13,6 @@ namespace ConfuserNext.Core.Services {
 		/// </summary>
 		static readonly byte[] primes = { 7, 11, 23, 37, 43, 59, 71 };
 
-		readonly SHA256Managed sha256 = new SHA256Managed();
 		int mixIndex;
 		byte[] state; //32 bytes
 		int stateFilled;
@@ -53,7 +52,7 @@ namespace ConfuserNext.Core.Services {
 		void NextState() {
 			for (int i = 0; i < 32; i++)
 				state[i] ^= primes[mixIndex = (mixIndex + 1) % primes.Length];
-			state = sha256.ComputeHash(state);
+			state = Utils.SHA256(state);
 			stateFilled = 32;
 		}
 

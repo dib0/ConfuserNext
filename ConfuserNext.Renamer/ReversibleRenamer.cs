@@ -5,13 +5,20 @@ using System.Text;
 
 namespace ConfuserNext.Renamer {
 	public class ReversibleRenamer {
-		RijndaelManaged cipher;
+		// Fixed, application-specific salt: there is no per-project salt storage, so the
+		// derivation must stay reproducible from the password alone. The salt's role here
+		// is only to stop precomputed (rainbow-table) attacks against the raw password hash;
+		// the iteration count is what raises the cost of brute-forcing the password itself.
+		static readonly byte[] KdfSalt = Encoding.UTF8.GetBytes("ConfuserNext.ReversibleRenamer.v1");
+		const int KdfIterations = 100_000;
+
+		Aes cipher;
 		byte[] key;
 
 		public ReversibleRenamer(string password) {
-			cipher = new RijndaelManaged();
-			using (var sha = SHA256.Create())
-				cipher.Key = key = sha.ComputeHash(Encoding.UTF8.GetBytes(password));
+			cipher = Aes.Create();
+			using (var kdf = new Rfc2898DeriveBytes(password, KdfSalt, KdfIterations, HashAlgorithmName.SHA256))
+				cipher.Key = key = kdf.GetBytes(32);
 		}
 
 		static string Base64Encode(byte[] buf) {
