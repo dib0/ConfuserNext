@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ConfuserNext.Tests</RootNamespace>
+    <AssemblyName>ConfuserNext.Tests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <!-- Signed with the same ConfuserNext.snk as every other project (inherited from
+         Directory.Build.props). The source projects' InternalsVisibleTo attributes reference
+         this assembly's public key directly, since the C# compiler requires that whenever the
+         declaring assembly is itself strong-name signed. -->
+    <PublicKey>0024000004800000940000000602000000240000525341310004000001000100a573e33d3fc09b3edf6ec27baf5c43e04766358bb011b3d037eefd386ef96d950b50bfd2a8d3c715a2f2ae4f6ee53dff9495ec32c6ec37d4856f1bee70259ceb013d945f19b7983d373ad85b9baa52c65585dd242d7195068757ace8f4144fa0897c07f058899e3026cc725f14e17287df8eaf4b6b3ae25fa40d7b61d9440ac8</PublicKey>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ConfuserNext.Core\ConfuserNext.Core.csproj" />
+    <ProjectReference Include="..\ConfuserNext.DynCipher\ConfuserNext.DynCipher.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Renamer\ConfuserNext.Renamer.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Protections\ConfuserNext.Protections.csproj" />
+    <ProjectReference Include="..\ConfuserNext.Runtime\ConfuserNext.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

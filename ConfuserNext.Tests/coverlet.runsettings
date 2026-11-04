@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!--
+            ConfuserNext.Runtime must be excluded from instrumentation: ConfuserNext.Core's
+            RuntimeService loads ConfuserNext.Runtime.dll straight off disk (next to
+            ConfuserNext.Core.dll) and clones its IL into whatever module is being protected
+            (see InjectHelper.Inject). Coverlet's instrumentation rewrites that exact file to add
+            its own coverage-tracking type; once cloned into a target module, dnlib cannot resolve
+            that injected type, which fails real protection runs with a TypeResolveException that
+            has nothing to do with the code under test. ConfuserNext.Runtime's code is never
+            meaningfully "covered" by instrumentation in the first place, since in this test suite
+            it only ever executes by being IL-cloned into other modules, never by running directly
+            in the test process.
+          -->
+          <Exclude>[ConfuserNext.Runtime]*,[ConfuserNext.Renamer]ConfuserNext.Renamer.BAML.*,[ConfuserNext.Renamer]ConfuserNext.Renamer.Analyzers.WPFAnalyzer,[ConfuserNext.Renamer]ConfuserNext.Renamer.Analyzers.WinFormsAnalyzer,[ConfuserNext.Renamer]ConfuserNext.Renamer.Analyzers.CaliburnAnalyzer,[ConfuserNext.Renamer]ConfuserNext.Renamer.Analyzers.JsonAnalyzer,[ConfuserNext.Renamer]ConfuserNext.Renamer.References.BAML*</Exclude>
+          <!--
+            The BAML/WPF/WinForms/Caliburn.Micro/JSON.NET-aware analyzers only do anything when
+            fed a real compiled assembly of that specific shape (an actual WPF app with compiled
+            .baml resources; a WinForms app with a designer-generated InitializeComponent; a
+            Caliburn.Micro convention-binding app; a type decorated with Json.NET attributes).
+            Producing those fixtures requires the WPF/WinForms Desktop SDK's markup compiler and
+            reference assemblies for just the WPF analyzer, which is disproportionate to this
+            suite's goal; they are not exercised by the plain console-app fixtures used elsewhere
+            and are excluded rather than reported as a misleading 0%.
+          -->
+
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

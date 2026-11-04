@@ -6,4 +6,5 @@
   <Project Path="ConfuserNext.Protections/ConfuserNext.Protections.csproj" />
   <Project Path="ConfuserNext.Renamer/ConfuserNext.Renamer.csproj" />
   <Project Path="ConfuserNext.Runtime/ConfuserNext.Runtime.csproj" />
+  <Project Path="ConfuserNext.Tests/ConfuserNext.Tests.csproj" />
 </Solution>

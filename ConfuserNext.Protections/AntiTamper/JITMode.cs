@@ -188,7 +188,9 @@ namespace ConfuserNext.Protections.AntiTamper {
 				}
 			}
 			if (moved)
-				writer.Sections.Add(peSection);
+				// Must use AddSection (not Sections.Add) - see the identical fix and explanation in
+				// AntiTamper/NormalMode.cs.
+				writer.AddSection(peSection);
 
 			// create section
 			var nameBuffer = new byte[8];

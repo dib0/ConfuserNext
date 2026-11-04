@@ -31,3 +31,4 @@ _ReSharper*/
 *.sln.*
 gh-pages/
 artifacts/
+coverage-report/

@@ -33,13 +33,21 @@ namespace ConfuserNext.Core {
 			Directory.CreateDirectory(tmpDir);
 
 			for (int i = 0; i < context.OutputModules.Count; i++) {
+				// context.OutputPaths[i] == fileName for the module this stub replaces (Compressor
+				// always passes its own context.OutputPaths[ModuleIndex] as fileName) - writing its
+				// stale pre-compression bytes here just to immediately overwrite them below is
+				// wasted work, and on Windows the write-then-immediately-rewrite-then-read of the
+				// same file can race against the on-write antivirus scan lock, intermittently
+				// failing the dnlib reload a few lines down with a sharing-violation IOException.
+				if (context.OutputPaths[i] == fileName)
+					continue;
 				string path = Path.GetFullPath(Path.Combine(tmpDir, context.OutputPaths[i]));
 				var dir = Path.GetDirectoryName(path);
 				if (!Directory.Exists(dir))
 					Directory.CreateDirectory(dir);
-				File.WriteAllBytes(path, context.OutputModules[i]);
+				WriteFileThenAwaitReadable(path, context.OutputModules[i]);
 			}
-			File.WriteAllBytes(Path.Combine(tmpDir, fileName), module);
+			WriteFileThenAwaitReadable(Path.Combine(tmpDir, fileName), module);
 
 			var proj = new ConfuserProject();
 			proj.Seed = context.Project.Seed;
@@ -85,6 +93,37 @@ namespace ConfuserNext.Core {
 
 			context.OutputModules = new[] { File.ReadAllBytes(Path.Combine(outDir, fileName)) };
 			context.OutputPaths = new[] { fileName };
+		}
+
+		/// <summary>
+		///     Writes <paramref name="data" /> to <paramref name="path" />, then waits until the
+		///     file can be opened for exclusive reading before returning. The caller
+		///     (<see cref="ProtectStub" />) immediately hands this freshly-written file to a
+		///     recursive <see cref="ConfuserEngine.Run" />, which memory-maps it for reading almost
+		///     instantly; on Windows, antivirus real-time protection commonly grabs a brief
+		///     exclusive lock on a newly created executable file for scanning, which can otherwise
+		///     make that reload fail with a sharing-violation IOException. Waiting here first lets
+		///     that scan happen (and release its lock) before the race-prone read.
+		/// </summary>
+		static void WriteFileThenAwaitReadable(string path, byte[] data) {
+			File.WriteAllBytes(path, data);
+
+			const int maxAttempts = 20;
+			for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+				try {
+					using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+						return;
+					}
+				}
+				// A file briefly locked for scanning reports as a sharing-violation IOException in
+				// most cases, but .NET surfaces the exact same underlying Win32 error as
+				// UnauthorizedAccessException instead whenever the open also requests FileAccess.Read
+				// and the holder's share flags don't permit it - both are the same transient
+				// condition here, not a real permissions problem (we created this file ourselves).
+				catch (Exception ex) when (attempt < maxAttempts && (ex is IOException || ex is UnauthorizedAccessException)) {
+					System.Threading.Thread.Sleep(50);
+				}
+			}
 		}
 	}
 

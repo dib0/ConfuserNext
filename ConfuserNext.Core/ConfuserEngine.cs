@@ -96,6 +96,20 @@ namespace ConfuserNext.Core {
 				foreach (string probePath in parameters.Project.ProbePaths)
 					asmResolver.PostSearchPaths.Insert(0, Path.Combine(context.BaseDirectory, probePath));
 
+				// Must happen before any module is loaded/marked below: Marker.MarkProject() does
+				// its own early dependency resolution (e.g. VTable construction walks base types up
+				// into corlib), and AssemblyResolver caches a failed resolution - adding this search
+				// path later (once context.Modules is known, as GetModernFrameworkSearchPaths did
+				// exclusively before) is too late for anything that resolver already attempted and
+				// cached as "not found" during marking. The host's own framework search path never
+				// depends on knowing the target module(s)' TFM (see GetModernFrameworkSearchPaths'
+				// doc comment on why the host's corlib version is always potentially needed), so it
+				// can safely be added this early.
+#if !NETFRAMEWORK
+				if (AddHostFrameworkSearchPaths(asmResolver))
+					asmResolver.FindExactMatch = true;
+#endif
+
 				context.CheckCancellation();
 
 				Marker marker = parameters.GetMarker();
@@ -518,6 +532,30 @@ namespace ConfuserNext.Core {
 			}
 		}
 
+#if !NETFRAMEWORK
+		/// <summary>
+		///     Adds search paths for the shared framework(s) matching the <i>host</i> process's own
+		///     .NET (Core) major version - i.e. whatever framework is currently running
+		///     ConfuserNext.Core itself - directly to <paramref name="resolver" />, and returns
+		///     whether anything was added. Must be called before any module is loaded or marked (see
+		///     call site): unlike the target-module-TFM-based search added later by
+		///     <see cref="GetModernFrameworkSearchPaths" />, this one needs no module to inspect, so
+		///     there is no reason it can't run immediately.
+		/// </summary>
+		static bool AddHostFrameworkSearchPaths(AssemblyResolver resolver) {
+			System.Version hostVersion = typeof(object).Assembly.GetName().Version;
+			if (hostVersion == null)
+				return false;
+
+			bool added = false;
+			foreach (string path in FindFrameworkSearchPaths(new HashSet<int> { hostVersion.Major })) {
+				resolver.PostSearchPaths.Add(path);
+				added = true;
+			}
+			return added;
+		}
+#endif
+
 		/// <summary>
 		///     Gets the directories of the modern .NET shared frameworks (Microsoft.NETCore.App,
 		///     Microsoft.WindowsDesktop.App, Microsoft.AspNetCore.App, ...) that match the .NET
@@ -557,6 +595,21 @@ namespace ConfuserNext.Core {
 			if (hostVersion != null)
 				majorVersions.Add(hostVersion.Major);
 
+			foreach (string path in FindFrameworkSearchPaths(majorVersions))
+				yield return path;
+#endif
+		}
+
+#if !NETFRAMEWORK
+		/// <summary>
+		///     Finds, for each shared framework installed alongside the host runtime
+		///     (Microsoft.NETCore.App, Microsoft.WindowsDesktop.App, Microsoft.AspNetCore.App, ...),
+		///     the highest installed version directory matching one of <paramref name="majorVersions" />
+		///     (mimicking the real runtime's roll-forward behavior - see
+		///     <see cref="GetModernFrameworkSearchPaths" />'s remarks on why only the best match per
+		///     major version is returned).
+		/// </summary>
+		static IEnumerable<string> FindFrameworkSearchPaths(HashSet<int> majorVersions) {
 			if (majorVersions.Count == 0)
 				yield break;
 
@@ -586,10 +639,8 @@ namespace ConfuserNext.Core {
 						yield return best.FullName;
 				}
 			}
-#endif
 		}
 
-#if !NETFRAMEWORK
 		/// <summary>
 		///     Gets the .NETCoreApp major version targeted by <paramref name="module" />'s
 		///     assembly (e.g. <c>8</c> for ".NETCoreApp,Version=v8.0"), or <c>null</c> if it does
@@ -639,27 +690,38 @@ namespace ConfuserNext.Core {
 			if (context.PackerInitiated)
 				return;
 
-			context.Logger.Error("---BEGIN DEBUG INFO---");
+			// This runs from the catch blocks in RunInternal, after the real failure has already
+			// been logged - it is purely best-effort supplementary diagnostics. It must never throw:
+			// an exception escaping here (e.g. GetFrameworkVersions()'s legacy registry scan finding
+			// the expected key missing or inaccessible, which does happen on some machines/under
+			// some process security contexts) would propagate out of RunInternal's own catch block
+			// entirely uncaught, replacing the real, already-logged error with an opaque crash.
+			try {
+				context.Logger.Error("---BEGIN DEBUG INFO---");
 
-			context.Logger.Error("Installed Framework Versions:");
-			foreach (string ver in GetFrameworkVersions()) {
-				context.Logger.ErrorFormat("    {0}", ver.Trim());
-			}
-			context.Logger.Error("");
-
-			if (context.Resolver != null) {
-				context.Logger.Error("Cached assemblies:");
-				foreach (AssemblyDef asm in context.Resolver.GetCachedAssemblies()) {
-					if (string.IsNullOrEmpty(asm.ManifestModule.Location))
-						context.Logger.ErrorFormat("    {0}", asm.FullName);
-					else
-						context.Logger.ErrorFormat("    {0} ({1})", asm.FullName, asm.ManifestModule.Location);
-					foreach (var reference in asm.Modules.OfType<ModuleDefMD>().SelectMany(m => m.GetAssemblyRefs()))
-						context.Logger.ErrorFormat("        {0}", reference.FullName);
+				context.Logger.Error("Installed Framework Versions:");
+				foreach (string ver in GetFrameworkVersions()) {
+					context.Logger.ErrorFormat("    {0}", ver.Trim());
 				}
-			}
+				context.Logger.Error("");
 
-			context.Logger.Error("---END DEBUG INFO---");
+				if (context.Resolver != null) {
+					context.Logger.Error("Cached assemblies:");
+					foreach (AssemblyDef asm in context.Resolver.GetCachedAssemblies()) {
+						if (string.IsNullOrEmpty(asm.ManifestModule.Location))
+							context.Logger.ErrorFormat("    {0}", asm.FullName);
+						else
+							context.Logger.ErrorFormat("    {0} ({1})", asm.FullName, asm.ManifestModule.Location);
+						foreach (var reference in asm.Modules.OfType<ModuleDefMD>().SelectMany(m => m.GetAssemblyRefs()))
+							context.Logger.ErrorFormat("        {0}", reference.FullName);
+					}
+				}
+
+				context.Logger.Error("---END DEBUG INFO---");
+			}
+			catch (Exception ex) {
+				context.Logger.WarnException("Failed to print supplementary debug info.", ex);
+			}
 		}
 	}
 }
